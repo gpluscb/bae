@@ -5,7 +5,6 @@ create table if not exists blog
             primary key,
     date_of_publication INTEGER,
     title               TEXT    not null,
-    contents            TEXT    not null,
     markdown            TEXT,
     html                TEXT    not null,
     tags                TEXT    not null,

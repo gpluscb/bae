@@ -1,5 +1,6 @@
-mod server;
-mod templates;
+pub mod database;
+pub mod model;
+pub mod server;
 
 use axum::extract::FromRef;
 use serde::Deserialize;

@@ -1,5 +1,7 @@
-use crate::templates::{ErrorTemplate, HomeTemplate};
-use crate::AppState;
+pub mod blog;
+pub mod templates;
+
+use crate::{database, AppState};
 use askama::Template;
 use axum::extract::rejection::PathRejection;
 use axum::http::StatusCode;
@@ -7,6 +9,7 @@ use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
+use templates::{ErrorTemplate, HomeTemplate};
 use thiserror::Error;
 use tracing::error;
 
@@ -20,13 +23,15 @@ pub enum Error {
     Path(#[from] PathRejection),
     #[error("Askama error: {0}")]
     Askama(#[from] askama::Error),
+    #[error("Database error: {0}")]
+    Database(#[from] database::Error),
 }
 
 impl Error {
     pub fn status(&self) -> StatusCode {
         match self {
             Error::NotFound | Error::Path(_) => StatusCode::NOT_FOUND,
-            Error::Askama(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::Askama(_) | Error::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -50,6 +55,7 @@ impl IntoResponse for Error {
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(home)
+        .nest("/blog", blog::router())
         .fallback(|| async { Error::NotFound })
 }
 

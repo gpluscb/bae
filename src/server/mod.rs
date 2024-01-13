@@ -1,6 +1,7 @@
 use crate::templates::{ErrorTemplate, HomeTemplate};
 use crate::AppState;
 use askama::Template;
+use axum::extract::rejection::PathRejection;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
@@ -13,6 +14,8 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Path rejection: {0}")]
+    Path(#[from] PathRejection),
     #[error("Askama error: {0}")]
     Askama(#[from] askama::Error),
 }
@@ -20,6 +23,7 @@ pub enum Error {
 impl Error {
     pub fn status(&self) -> StatusCode {
         match self {
+            Error::Path(_) => StatusCode::NOT_FOUND,
             Error::Askama(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -27,9 +31,9 @@ impl Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        error!(error = %self, "Replying with error");
-
         let status = self.status();
+
+        error!(error = %self, %status, "Replying with error");
 
         match (ErrorTemplate { status }.render()) {
             Ok(html) => Html(html).into_response(),
@@ -46,7 +50,7 @@ pub fn router() -> Router<AppState> {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/")]
+#[typed_path("/", rejection(Error))]
 pub struct HomePath {}
 
 pub async fn home(_path: HomePath) -> Result<Html<String>> {

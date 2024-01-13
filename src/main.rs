@@ -12,6 +12,8 @@ pub struct AppState {}
 
 #[tokio::main]
 async fn main() {
+    _ = dotenv::dotenv();
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -26,7 +28,7 @@ async fn main() {
 
     let app = server::router().layer(tracing_layer).with_state(app_state);
 
-    let listener = TcpListener::bind("localhost:80")
+    let listener = TcpListener::bind("localhost:8080")
         .await
         .expect("Binding TcpListener failed");
 

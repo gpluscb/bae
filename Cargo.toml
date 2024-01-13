@@ -15,4 +15,5 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 askama = "0.12"
 sqlx = "0.7"
 serde = { version = "1.0", features = ["derive"] }
+dotenv = "0.15"
 thiserror = "1.0"

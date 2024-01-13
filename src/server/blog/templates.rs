@@ -1,8 +1,8 @@
-use crate::model::Blog;
+use crate::model::BlogPost;
 use askama::Template;
 
 #[derive(Template)]
 #[template(path = "blog/home.html")]
 pub struct HomeTemplate {
-    pub blogs: Vec<Blog>,
+    pub blog_posts: Vec<BlogPost>,
 }

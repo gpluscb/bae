@@ -1,4 +1,4 @@
-use crate::model::Blog;
+use crate::model::BlogPost;
 use sqlx::{query_as, SqliteExecutor};
 use std::time::{Duration, SystemTime};
 use thiserror::Error;
@@ -13,7 +13,7 @@ pub enum Error {
     UnexpectedData,
 }
 
-struct BlogRecord {
+struct BlogPostRecord {
     url: String,
     title: String,
     markdown: Option<String>,
@@ -23,11 +23,11 @@ struct BlogRecord {
     date_of_publication: Option<i64>,
 }
 
-impl TryFrom<BlogRecord> for Blog {
+impl TryFrom<BlogPostRecord> for BlogPost {
     type Error = Error;
 
     fn try_from(
-        BlogRecord {
+        BlogPostRecord {
             url,
             title,
             markdown,
@@ -35,14 +35,14 @@ impl TryFrom<BlogRecord> for Blog {
             tags,
             accessible,
             date_of_publication,
-        }: BlogRecord,
+        }: BlogPostRecord,
     ) -> Result<Self> {
         let tags = tags.split(',').map(String::from).collect();
         let accessible = accessible != 0;
         let date_of_publication = date_of_publication
             .map(|secs| SystemTime::UNIX_EPOCH + Duration::from_secs(secs as u64));
 
-        Ok(Blog {
+        Ok(BlogPost {
             url,
             title,
             markdown,
@@ -54,11 +54,11 @@ impl TryFrom<BlogRecord> for Blog {
     }
 }
 
-pub async fn get_blog<'c, E: SqliteExecutor<'c>>(url: &str, executor: E) -> Result<Blog> {
+pub async fn get_blog_post<'c, E: SqliteExecutor<'c>>(url: &str, executor: E) -> Result<BlogPost> {
     query_as!(
-        BlogRecord,
+        BlogPostRecord,
         "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
-         FROM blog \
+         FROM blog_post \
          WHERE url=?",
         url
     )
@@ -67,29 +67,31 @@ pub async fn get_blog<'c, E: SqliteExecutor<'c>>(url: &str, executor: E) -> Resu
     .try_into()
 }
 
-pub async fn get_all_blogs<'c, E: SqliteExecutor<'c>>(executor: E) -> Result<Vec<Blog>> {
+pub async fn get_all_blog_posts<'c, E: SqliteExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
-        BlogRecord,
+        BlogPostRecord,
         "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
-        FROM blog"
+        FROM blog_post"
     )
     .fetch_all(executor)
     .await?
     .into_iter()
-    .map(Blog::try_from)
+    .map(BlogPost::try_from)
     .collect()
 }
 
-pub async fn get_public_blogs<'c, E: SqliteExecutor<'c>>(executor: E) -> Result<Vec<Blog>> {
+pub async fn get_public_blog_posts<'c, E: SqliteExecutor<'c>>(
+    executor: E,
+) -> Result<Vec<BlogPost>> {
     query_as!(
-        BlogRecord,
+        BlogPostRecord,
         "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
-        FROM blog \
+        FROM blog_post \
         WHERE accessible IS NOT 0 AND date_of_publication NOT NULL"
     )
     .fetch_all(executor)
     .await?
     .into_iter()
-    .map(Blog::try_from)
+    .map(BlogPost::try_from)
     .collect()
 }

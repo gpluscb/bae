@@ -20,8 +20,8 @@ pub fn router() -> Router<AppState> {
 pub struct HomePath {}
 
 pub async fn home(_path: HomePath, State(db): State<SqlitePool>) -> Result<Html<String>> {
-    let blogs = database::get_public_blogs(&db).await?;
+    let blog_posts = database::get_public_blog_posts(&db).await?;
 
-    let html = HomeTemplate { blogs }.render()?;
+    let html = HomeTemplate { blog_posts }.render()?;
     Ok(Html(html))
 }

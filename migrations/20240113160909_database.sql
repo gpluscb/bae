@@ -1,4 +1,4 @@
-create table if not exists blog
+create table if not exists blog_post
 (
     url                 TEXT    not null
         constraint blog_pk

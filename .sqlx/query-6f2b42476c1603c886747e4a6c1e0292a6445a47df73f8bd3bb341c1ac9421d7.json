@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT url, title, markdown, html, tags, accessible, date_of_publication FROM blog WHERE accessible != 0 AND date_of_publication != NULL",
+  "query": "SELECT url, title, markdown, html, tags, accessible, date_of_publication FROM blog_post WHERE accessible IS NOT 0 AND date_of_publication NOT NULL",
   "describe": {
     "columns": [
       {
@@ -52,5 +52,5 @@
       true
     ]
   },
-  "hash": "4582c8f4b5d6bd389116fe74be20b570a923f6d23350b27e3832d5554b2f7329"
+  "hash": "6f2b42476c1603c886747e4a6c1e0292a6445a47df73f8bd3bb341c1ac9421d7"
 }

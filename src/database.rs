@@ -85,7 +85,7 @@ pub async fn get_public_blogs<'c, E: SqliteExecutor<'c>>(executor: E) -> Result<
         BlogRecord,
         "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
         FROM blog \
-        WHERE accessible != 0 AND date_of_publication != NULL"
+        WHERE accessible IS NOT 0 AND date_of_publication NOT NULL"
     )
     .fetch_all(executor)
     .await?

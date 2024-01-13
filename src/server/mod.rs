@@ -14,6 +14,8 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Not found")]
+    NotFound,
     #[error("Path rejection: {0}")]
     Path(#[from] PathRejection),
     #[error("Askama error: {0}")]
@@ -23,7 +25,7 @@ pub enum Error {
 impl Error {
     pub fn status(&self) -> StatusCode {
         match self {
-            Error::Path(_) => StatusCode::NOT_FOUND,
+            Error::NotFound | Error::Path(_) => StatusCode::NOT_FOUND,
             Error::Askama(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -46,7 +48,9 @@ impl IntoResponse for Error {
 }
 
 pub fn router() -> Router<AppState> {
-    Router::new().typed_get(home)
+    Router::new()
+        .typed_get(home)
+        .fallback(|| async { Error::NotFound })
 }
 
 #[derive(TypedPath, Deserialize)]

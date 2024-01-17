@@ -1,9 +1,15 @@
-Blog Home
+{% extends "../base.html" %}
 
-Blog posts:
+{% block title %}Blog{% endblock %}
+
+{% block contents %}
+<h1>Blog Home</h1>
+
+<p>Blog posts:</p>
 
 <ul>
 {% for blog_post in blog_posts %}
-    <li>{{ blog_post.title }}</li>
+    <li><a href="blog/{{ blog_post.url }}">{{ blog_post.title }}</a></li>
 {% endfor %}
 </ul>
+{% endblock %}

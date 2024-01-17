@@ -6,3 +6,9 @@ use askama::Template;
 pub struct HomeTemplate {
     pub blog_posts: Vec<BlogPost>,
 }
+
+#[derive(Template)]
+#[template(path = "blog/blog_post.html")]
+pub struct BlogPostTemplate {
+    pub blog_post: BlogPost,
+}

@@ -63,7 +63,7 @@ pub fn router() -> Router<AppState> {
 #[typed_path("/", rejection(Error))]
 pub struct HomePath {}
 
-pub async fn home(_path: HomePath) -> Result<Html<String>> {
+pub async fn home(HomePath {}: HomePath) -> Result<Html<String>> {
     let html = HomeTemplate {}.render()?;
     Ok(Html(html))
 }

@@ -19,7 +19,7 @@ struct Env {
 
 #[derive(Clone, Debug, FromRef)]
 pub struct AppState {
-    db: SqlitePool,
+    database: SqlitePool,
 }
 
 #[tokio::main]
@@ -36,21 +36,21 @@ async fn main() {
 
     let env: Env = envy::from_env().expect("Deserializing environment variables failed");
 
-    let db = SqlitePool::connect(&env.database_url)
+    let database = SqlitePool::connect(&env.database_url)
         .await
         .expect("Could not connect to database");
 
     migrate!()
-        .run(&db)
+        .run(&database)
         .await
         .expect("Database migration failed");
 
     query!("PRAGMA foreign_keys=ON")
-        .execute(&db)
+        .execute(&database)
         .await
         .expect("foreign_keys query failed");
 
-    let app_state = AppState { db };
+    let app_state = AppState { database };
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::router().layer(tracing_layer).with_state(app_state);

@@ -54,7 +54,10 @@ impl TryFrom<BlogPostRecord> for BlogPost {
     }
 }
 
-pub async fn get_blog_post<'c, E: SqliteExecutor<'c>>(url: &str, executor: E) -> Result<BlogPost> {
+pub async fn get_blog_post<'c, E: SqliteExecutor<'c>>(
+    url: &str,
+    executor: E,
+) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
         "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
@@ -62,9 +65,27 @@ pub async fn get_blog_post<'c, E: SqliteExecutor<'c>>(url: &str, executor: E) ->
          WHERE url=?",
         url
     )
-    .fetch_one(executor)
+    .fetch_optional(executor)
     .await?
-    .try_into()
+    .map(BlogPost::try_from)
+    .transpose()
+}
+
+pub async fn get_accessible_blog_post<'c, E: SqliteExecutor<'c>>(
+    url: &str,
+    executor: E,
+) -> Result<Option<BlogPost>> {
+    query_as!(
+        BlogPostRecord,
+        "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
+         FROM blog_post \
+         WHERE url=? AND accessible IS NOT 0",
+        url
+    )
+    .fetch_optional(executor)
+    .await?
+    .map(BlogPost::try_from)
+    .transpose()
 }
 
 pub async fn get_all_blog_posts<'c, E: SqliteExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
@@ -95,3 +116,5 @@ pub async fn get_public_blog_posts<'c, E: SqliteExecutor<'c>>(
     .map(BlogPost::try_from)
     .collect()
 }
+
+// TODO: Tests

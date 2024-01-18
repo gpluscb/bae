@@ -1,0 +1,7 @@
+# OpenAI
+User-agent: GPTBot
+Disallow: /
+
+# Bard
+User-agent: Google-Extended
+Disallow: /

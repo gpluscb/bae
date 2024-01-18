@@ -55,6 +55,7 @@ impl IntoResponse for Error {
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(home)
+        .typed_get(robots)
         .nest("/blog", blog::router())
         .fallback(|| async { Error::NotFound })
 }
@@ -66,4 +67,12 @@ pub struct HomePath {}
 pub async fn home(HomePath {}: HomePath) -> Result<Html<String>> {
     let html = HomeTemplate {}.render()?;
     Ok(Html(html))
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/robots.txt", rejection(Error))]
+pub struct RobotsPath {}
+
+pub async fn robots(RobotsPath {}: RobotsPath) -> &'static str {
+    include_str!("../../static/robots.txt")
 }

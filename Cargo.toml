@@ -9,7 +9,7 @@ edition = "2021"
 axum = { version = "0.7", features = ["tracing", "macros"] }
 axum-extra = { version = "0.9", features = ["typed-routing"] }
 tokio = { version = "1.35", features = ["macros", "rt-multi-thread"] }
-tower-http = { version = "0.5", features = ["trace"] }
+tower-http = { version = "0.5", features = ["trace", "fs"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 askama = "0.12"

@@ -11,6 +11,7 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 use templates::{ErrorTemplate, HomeTemplate};
 use thiserror::Error;
+use tower_http::services::ServeDir;
 use tracing::error;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -57,6 +58,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(home)
         .typed_get(robots)
         .nest("/blog", blog::router())
+        .nest_service("/assets", ServeDir::new("web_contents/assets"))
         .fallback(|| async { Error::NotFound })
 }
 
@@ -74,5 +76,5 @@ pub async fn home(HomePath {}: HomePath) -> Result<Html<String>> {
 pub struct RobotsPath {}
 
 pub async fn robots(RobotsPath {}: RobotsPath) -> &'static str {
-    include_str!("../../static/robots.txt")
+    include_str!("../../web_contents/robots.txt")
 }

@@ -7,13 +7,17 @@
     <meta charset="utf-8">
     {% block metatags %}{% endblock %}
 
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Quicksand">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Montserrat">
     <link href="/assets/style.css" rel="stylesheet">
     {% endblock %}
 </head>
 
 <body>
 {% block body %}
-<div id="site-contents">
+<div id="site-contents" class="container mx-auto max-w-prose">
     {% block contents %}{% endblock %}
 </div>
 {% endblock %}

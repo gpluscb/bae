@@ -3,3 +3,6 @@
 .env
 /resources
 tailwindcss
+node_modules/
+package.json
+package-lock.json

@@ -674,15 +674,6 @@ h3{
   padding: 0.5rem;
 }
 
-.text-xs{
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.font-extralight{
-  font-weight: 200;
-}
-
 .font-light{
   font-weight: 300;
 }

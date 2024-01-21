@@ -57,7 +57,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(home)
         .typed_get(robots)
-        .nest("/blog", blog::router())
+        .merge(blog::router())
         .nest_service("/assets", ServeDir::new("web_contents/assets"))
         .fallback(|| async { Error::NotFound })
 }

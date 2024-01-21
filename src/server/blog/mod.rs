@@ -17,7 +17,7 @@ pub fn router() -> Router<AppState> {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/", rejection(Error))]
+#[typed_path("/blog", rejection(Error))]
 pub struct HomePath {}
 
 pub async fn home(HomePath {}: HomePath, State(database): State<PgPool>) -> Result<Html<String>> {
@@ -28,9 +28,9 @@ pub async fn home(HomePath {}: HomePath, State(database): State<PgPool>) -> Resu
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/:post_url", rejection(Error))]
+#[typed_path("/blog/post/:post_url", rejection(Error))]
 pub struct BlogPostPath {
-    post_url: String,
+    pub post_url: String,
 }
 
 pub async fn blog_post(

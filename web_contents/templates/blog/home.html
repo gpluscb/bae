@@ -10,7 +10,7 @@
 <ul class="mt-1">
     {% for blog_post in blog_posts %}
     <li class="list-none">
-        <a href="blog/{{ blog_post.url }}" class="hover:no-underline text-inherit hover:text-inherit">
+        <a href="{{ blog_post.full_url() }}" class="hover:no-underline text-inherit hover:text-inherit">
             <div class="rounded-xl bg-purple-400 hover:bg-purple-700 p-2 mb-2">
                 <h2>{{ blog_post.title }}</h2>
                 <p>{{ blog_post.html|safe }}</p> {# TODO: replace with description #}

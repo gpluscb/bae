@@ -3,7 +3,14 @@
 {% block title %}{{ blog_post.title }}{% endblock %}
 
 {% block contents %}
-<h1>{{ blog_post.title }}</h1>
+<div class="border-b-2 border-purple-600">
+    <h1>{{ blog_post.title }}</h1>
+    <p class="text-s font-light">
+        Tags: {%for tag in blog_post.tags -%}
+        <a href="tags/{{ tag }}">#{{tag}}</a>{% if !loop.last %}, {% endif -%}
+        {% endfor %}
+    </p>
+</div>
 
 <div id="contents">
     {{ blog_post.html|safe }}

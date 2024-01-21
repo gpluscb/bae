@@ -1,3 +1,4 @@
+use crate::server::blog::BlogPostPath;
 use std::time::SystemTime;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -12,6 +13,13 @@ pub struct BlogPost {
 }
 
 impl BlogPost {
+    pub fn full_url(&self) -> String {
+        BlogPostPath {
+            post_url: self.url.clone(),
+        }
+        .to_string()
+    }
+
     pub fn is_public(&self) -> bool {
         self.accessible
             && self

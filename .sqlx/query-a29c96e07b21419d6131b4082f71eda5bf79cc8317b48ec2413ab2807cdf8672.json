@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT url, title, markdown, html, tags, accessible, date_of_publication FROM blog_post WHERE url=? AND accessible IS NOT 0",
+  "describe": {
+    "columns": [
+      {
+        "name": "url",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "markdown",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "html",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "tags",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "accessible",
+        "ordinal": 5,
+        "type_info": "Int64"
+      },
+      {
+        "name": "date_of_publication",
+        "ordinal": 6,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a29c96e07b21419d6131b4082f71eda5bf79cc8317b48ec2413ab2807cdf8672"
+}

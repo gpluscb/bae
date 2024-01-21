@@ -14,8 +14,8 @@ pub struct BlogPostTemplate {
 }
 
 #[derive(Template)]
-#[template(path = "blog/tag.html")]
-pub struct TagTemplate {
+#[template(path = "blog/tagged.html")]
+pub struct TaggedTemplate {
     pub tag: Tag,
     pub blog_posts: Vec<BlogPost>,
 }

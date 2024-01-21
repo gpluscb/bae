@@ -1,4 +1,4 @@
-use crate::server::blog::{BlogPostPath, TagPath};
+use crate::server::blog::{BlogPostPath, TaggedPath};
 use serde::Deserialize;
 use std::fmt::{Display, Formatter};
 use std::time::SystemTime;
@@ -24,8 +24,8 @@ impl Display for Tag {
 }
 
 impl Tag {
-    pub fn full_path(&self) -> TagPath {
-        TagPath { tag: self.clone() }
+    pub fn full_path(&self) -> TaggedPath {
+        TaggedPath { tag: self.clone() }
     }
 }
 

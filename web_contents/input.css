@@ -6,27 +6,27 @@
 
 @layer base {
     h1, h2, h3, h4, h5, h6 {
-        @apply font-heading
+        @apply font-heading;
     }
 
     a {
-        @apply text-sky-600 hover:text-sky-900 hover:underline
+        @apply text-sky-600 hover:text-sky-900 hover:underline;
     }
 
     ul {
-        @apply list-disc
+        @apply list-disc;
     }
     ol {
-        @apply list-decimal
+        @apply list-decimal;
     }
 
     h1 {
-        @apply text-4xl font-medium mb-1.5
+        @apply text-4xl font-medium mb-1.5;
     }
     h2 {
-        @apply text-3xl font-medium mb-1
+        @apply text-3xl font-medium mb-1;
     }
     h3 {
-        @apply text-2xl font-light
+        @apply text-2xl font-light;
     }
 }

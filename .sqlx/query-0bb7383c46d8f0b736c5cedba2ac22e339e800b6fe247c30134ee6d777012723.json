@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags FROM blog_post NATURAL JOIN tag GROUP BY url",
+  "query": "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags FROM blog_post NATURAL LEFT JOIN tag WHERE url=$1 AND accessible GROUP BY url",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,
@@ -52,5 +54,5 @@
       null
     ]
   },
-  "hash": "ba28a3635a69e537d7fdc1006ca86de56e4ffc374c85f4f7a85a41b7eb412f92"
+  "hash": "0bb7383c46d8f0b736c5cedba2ac22e339e800b6fe247c30134ee6d777012723"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags FROM blog_post NATURAL JOIN tag WHERE accessible IS NOT FALSE AND publication_date IS NOT NULL GROUP BY url",
+  "query": "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags FROM blog_post NATURAL LEFT JOIN tag WHERE accessible AND publication_date IS NOT NULL AND publication_date <= now() at time zone('utc') GROUP BY url",
   "describe": {
     "columns": [
       {
@@ -52,5 +52,5 @@
       null
     ]
   },
-  "hash": "ca187c8a6eafaae4e8727fb7e72a47225ce16a2230cb380b3e408378e451f7ce"
+  "hash": "35782020c5f1fa26844135143e2431f73656cb3d7ef3ce7cb244d3d5d82af94e"
 }

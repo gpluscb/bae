@@ -59,8 +59,8 @@ pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
-         FROM blog_post NATURAL JOIN tag \
+        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+         FROM blog_post NATURAL LEFT JOIN tag \
          WHERE url=$1 \
          GROUP BY url",
         url
@@ -77,9 +77,9 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
-         FROM blog_post NATURAL JOIN tag \
-         WHERE url=$1 AND accessible IS TRUE \
+        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+         FROM blog_post NATURAL LEFT JOIN tag \
+         WHERE url=$1 AND accessible \
          GROUP BY url",
         url
     )
@@ -92,8 +92,8 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
 pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
-        FROM blog_post NATURAL JOIN tag \
+        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        FROM blog_post NATURAL LEFT JOIN tag \
         GROUP BY url"
     )
     .fetch_all(executor)
@@ -106,9 +106,10 @@ pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Ve
 pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
-        FROM blog_post NATURAL JOIN tag \
-        WHERE accessible IS NOT FALSE AND publication_date IS NOT NULL AND publication_date <= now() \
+        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        FROM blog_post NATURAL LEFT JOIN tag \
+        WHERE accessible AND publication_date IS NOT NULL \
+            AND publication_date <= now() at time zone('utc') \
         GROUP BY url"
     )
     .fetch_all(executor)

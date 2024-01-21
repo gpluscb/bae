@@ -11,11 +11,11 @@
     {% endblock %}
 </head>
 
-<body>
+<body class="h-screen bg-gradient-to-b from-purple-300 to-purple-100">
 {% block body %}
-<div id="site-contents" class="container mx-auto max-w-prose">
+<main id="site-contents" class="container mx-auto max-w-prose">
     {% block contents %}{% endblock %}
-</div>
+</main>
 {% endblock %}
 </body>
 </html>

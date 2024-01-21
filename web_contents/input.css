@@ -10,7 +10,7 @@
     }
 
     a {
-        @apply text-sky-600 hover:text-sky-900 hover:underline;
+        @apply text-sky-800 hover:text-sky-950 hover:underline;
     }
 
     ul {
@@ -21,12 +21,21 @@
     }
 
     h1 {
-        @apply text-4xl font-medium mb-1.5;
+        @apply text-4xl font-normal;
     }
     h2 {
-        @apply text-3xl font-medium mb-1;
+        @apply text-3xl font-light;
     }
     h3 {
-        @apply text-2xl font-light;
+        @apply text-2xl font-extralight;
+    }
+    h4 {
+        @apply text-xl font-thin
+    }
+    h5 {
+        @apply text-lg font-thin
+    }
+    h6 {
+        @apply text-base font-thin
     }
 }

@@ -104,12 +104,11 @@ pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Ve
 }
 
 pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
-    // TODO: support publish date in the future
     query_as!(
         BlogPostRecord,
         "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
         FROM blog_post NATURAL JOIN tag \
-        WHERE accessible IS NOT FALSE AND publication_date IS NOT NULL \
+        WHERE accessible IS NOT FALSE AND publication_date IS NOT NULL AND publication_date <= now() \
         GROUP BY url"
     )
     .fetch_all(executor)

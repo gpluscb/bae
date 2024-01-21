@@ -13,6 +13,9 @@ pub struct BlogPost {
 
 impl BlogPost {
     pub fn is_public(&self) -> bool {
-        self.accessible && self.publication_date.is_some()
+        self.accessible
+            && self
+                .publication_date
+                .map_or(false, |date| date <= SystemTime::now())
     }
 }

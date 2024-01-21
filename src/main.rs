@@ -4,7 +4,7 @@ pub mod server;
 
 use axum::extract::FromRef;
 use serde::Deserialize;
-use sqlx::{migrate, query, SqlitePool};
+use sqlx::{migrate, PgPool};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, error};
@@ -19,7 +19,7 @@ struct Env {
 
 #[derive(Clone, Debug, FromRef)]
 pub struct AppState {
-    database: SqlitePool,
+    database: PgPool,
 }
 
 #[tokio::main]
@@ -36,7 +36,7 @@ async fn main() {
 
     let env: Env = envy::from_env().expect("Deserializing environment variables failed");
 
-    let database = SqlitePool::connect(&env.database_url)
+    let database = PgPool::connect(&env.database_url)
         .await
         .expect("Could not connect to database");
 
@@ -44,11 +44,6 @@ async fn main() {
         .run(&database)
         .await
         .expect("Database migration failed");
-
-    query!("PRAGMA foreign_keys=ON")
-        .execute(&database)
-        .await
-        .expect("foreign_keys query failed");
 
     let app_state = AppState { database };
 

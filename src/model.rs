@@ -8,11 +8,11 @@ pub struct BlogPost {
     pub html: String,
     pub tags: Vec<String>,
     pub accessible: bool,
-    pub date_of_publication: Option<SystemTime>,
+    pub publication_date: Option<SystemTime>,
 }
 
 impl BlogPost {
     pub fn is_public(&self) -> bool {
-        self.accessible && self.date_of_publication.is_some()
+        self.accessible && self.publication_date.is_some()
     }
 }

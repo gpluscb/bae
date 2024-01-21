@@ -1,6 +1,7 @@
 /target
 .idea/
 .env
+data/
 /resources
 tailwindcss
 node_modules/

@@ -9,7 +9,7 @@ use axum::response::Html;
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use templates::HomeTemplate;
 
 pub fn router() -> Router<AppState> {
@@ -20,10 +20,7 @@ pub fn router() -> Router<AppState> {
 #[typed_path("/", rejection(Error))]
 pub struct HomePath {}
 
-pub async fn home(
-    HomePath {}: HomePath,
-    State(database): State<SqlitePool>,
-) -> Result<Html<String>> {
+pub async fn home(HomePath {}: HomePath, State(database): State<PgPool>) -> Result<Html<String>> {
     let blog_posts = database::get_public_blog_posts(&database).await?;
 
     let html = HomeTemplate { blog_posts }.render()?;
@@ -38,7 +35,7 @@ pub struct BlogPostPath {
 
 pub async fn blog_post(
     BlogPostPath { post_url }: BlogPostPath,
-    State(database): State<SqlitePool>,
+    State(database): State<PgPool>,
 ) -> Result<Html<String>> {
     let blog_post = database::get_accessible_blog_post(&post_url, &database)
         .await?

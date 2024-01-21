@@ -1,6 +1,6 @@
 use crate::model::BlogPost;
-use sqlx::{query_as, SqliteExecutor};
-use std::time::{Duration, SystemTime};
+use sqlx::types::time::PrimitiveDateTime;
+use sqlx::{query_as, PgExecutor};
 use thiserror::Error;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -18,9 +18,9 @@ struct BlogPostRecord {
     title: String,
     markdown: Option<String>,
     html: String,
-    tags: String,
-    accessible: i64,
-    date_of_publication: Option<i64>,
+    tags: Option<Vec<String>>,
+    accessible: bool,
+    publication_date: Option<PrimitiveDateTime>,
 }
 
 impl TryFrom<BlogPostRecord> for BlogPost {
@@ -34,13 +34,12 @@ impl TryFrom<BlogPostRecord> for BlogPost {
             html,
             tags,
             accessible,
-            date_of_publication,
+            publication_date,
         }: BlogPostRecord,
     ) -> Result<Self> {
-        let tags = tags.split(',').map(String::from).collect();
-        let accessible = accessible != 0;
-        let date_of_publication = date_of_publication
-            .map(|secs| SystemTime::UNIX_EPOCH + Duration::from_secs(secs as u64));
+        let tags = tags.unwrap_or(Vec::new());
+        let publication_date =
+            publication_date.map(|primitive_date_time| primitive_date_time.assume_utc().into());
 
         Ok(BlogPost {
             url,
@@ -49,20 +48,21 @@ impl TryFrom<BlogPostRecord> for BlogPost {
             html,
             tags,
             accessible,
-            date_of_publication,
+            publication_date,
         })
     }
 }
 
-pub async fn get_blog_post<'c, E: SqliteExecutor<'c>>(
+pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
     url: &str,
     executor: E,
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
-         FROM blog_post \
-         WHERE url=?",
+        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
+         FROM blog_post NATURAL JOIN tag \
+         WHERE url=$1 \
+         GROUP BY url",
         url
     )
     .fetch_optional(executor)
@@ -71,15 +71,16 @@ pub async fn get_blog_post<'c, E: SqliteExecutor<'c>>(
     .transpose()
 }
 
-pub async fn get_accessible_blog_post<'c, E: SqliteExecutor<'c>>(
+pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
     url: &str,
     executor: E,
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
-         FROM blog_post \
-         WHERE url=? AND accessible IS NOT 0",
+        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
+         FROM blog_post NATURAL JOIN tag \
+         WHERE url=$1 AND accessible IS TRUE \
+         GROUP BY url",
         url
     )
     .fetch_optional(executor)
@@ -88,11 +89,12 @@ pub async fn get_accessible_blog_post<'c, E: SqliteExecutor<'c>>(
     .transpose()
 }
 
-pub async fn get_all_blog_posts<'c, E: SqliteExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
+pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
-        FROM blog_post"
+        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
+        FROM blog_post NATURAL JOIN tag \
+        GROUP BY url"
     )
     .fetch_all(executor)
     .await?
@@ -101,14 +103,14 @@ pub async fn get_all_blog_posts<'c, E: SqliteExecutor<'c>>(executor: E) -> Resul
     .collect()
 }
 
-pub async fn get_public_blog_posts<'c, E: SqliteExecutor<'c>>(
-    executor: E,
-) -> Result<Vec<BlogPost>> {
+pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
+    // TODO: support publish date in the future
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, tags, accessible, date_of_publication \
-        FROM blog_post \
-        WHERE accessible IS NOT 0 AND date_of_publication NOT NULL"
+        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
+        FROM blog_post NATURAL JOIN tag \
+        WHERE accessible IS NOT FALSE AND publication_date IS NOT NULL \
+        GROUP BY url"
     )
     .fetch_all(executor)
     .await?

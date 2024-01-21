@@ -5,11 +5,18 @@
 {% block contents %}
 <h1>Blog Home</h1>
 
-<p>Blog posts:</p>
+<h2 class="font-light">Blog posts:</h2>
 
-<ul>
-{% for blog_post in blog_posts %}
-    <li><a href="blog/{{ blog_post.url }}">{{ blog_post.title }}</a></li>
-{% endfor %}
+<ul class="mt-1">
+    {% for blog_post in blog_posts %}
+    <li class="list-none">
+        <a href="blog/{{ blog_post.url }}" class="hover:no-underline text-inherit hover:text-inherit">
+            <div class="rounded-xl bg-purple-400 hover:bg-purple-700 p-2 mb-2">
+                <h2>{{ blog_post.title }}</h2>
+                <p>{{ blog_post.html|safe }}</p> {# TODO: replace with description #}
+            </div>
+        </a>
+    </li>
+    {% endfor %}
 </ul>
 {% endblock %}

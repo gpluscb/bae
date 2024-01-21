@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags FROM blog_post NATURAL JOIN tag WHERE accessible IS NOT FALSE AND publication_date IS NOT NULL GROUP BY url",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "markdown",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "html",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "accessible",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "publication_date",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 6,
+        "name": "tags",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "ca187c8a6eafaae4e8727fb7e72a47225ce16a2230cb380b3e408378e451f7ce"
+}

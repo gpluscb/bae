@@ -1,4 +1,4 @@
-use crate::model::BlogPost;
+use crate::model::{BlogPost, Tag};
 use sqlx::types::time::PrimitiveDateTime;
 use sqlx::{query_as, PgExecutor};
 use thiserror::Error;
@@ -37,7 +37,7 @@ impl TryFrom<BlogPostRecord> for BlogPost {
             publication_date,
         }: BlogPostRecord,
     ) -> Result<Self> {
-        let tags = tags.unwrap_or(Vec::new());
+        let tags = tags.unwrap_or(Vec::new()).into_iter().map(Tag).collect();
         let publication_date =
             publication_date.map(|primitive_date_time| primitive_date_time.assume_utc().into());
 
@@ -111,6 +111,27 @@ pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result
         WHERE accessible AND publication_date IS NOT NULL \
             AND publication_date <= now() at time zone('utc') \
         GROUP BY url"
+    )
+    .fetch_all(executor)
+    .await?
+    .into_iter()
+    .map(BlogPost::try_from)
+    .collect()
+}
+
+pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
+    tag: &Tag,
+    executor: E,
+) -> Result<Vec<BlogPost>> {
+    query_as!(
+        BlogPostRecord,
+        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
+        FROM blog_post NATURAL JOIN tag \
+        WHERE accessible AND publication_date IS NOT NULL \
+            AND publication_date <= now() at time zone('utc') \
+            AND tag=$1 \
+        GROUP BY url",
+        tag.0,
     )
     .fetch_all(executor)
     .await?

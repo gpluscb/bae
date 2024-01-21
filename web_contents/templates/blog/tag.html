@@ -1,12 +1,8 @@
 {% extends "../base.html" %}
 {% import "display_macros.html" as disp %}
 
-{% block title %}Blog{% endblock %}
+{% block title %}Tagged {{ tag }}{% endblock %}
 
 {% block contents %}
-<h1>Blog Home</h1>
-
-<h2 class="font-light">Blog posts:</h2>
-
 {% call disp::display_posts(blog_posts) %}
 {% endblock %}

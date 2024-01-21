@@ -7,7 +7,7 @@
     <h1>{{ blog_post.title }}</h1>
     <p class="text-s font-light">
         Tags: {%for tag in blog_post.tags -%}
-        <a href="tags/{{ tag }}">#{{tag}}</a>{% if !loop.last %}, {% endif -%}
+        <a href="{{ tag.full_path() }}">#{{tag}}</a>{% if !loop.last %}, {% endif -%}
         {% endfor %}
     </p>
 </div>

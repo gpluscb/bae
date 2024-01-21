@@ -1,6 +1,7 @@
 pub mod templates;
 
-use crate::server::blog::templates::BlogPostTemplate;
+use crate::model::Tag;
+use crate::server::blog::templates::{BlogPostTemplate, TagTemplate};
 use crate::server::{Error, Result};
 use crate::{database, AppState};
 use askama::Template;
@@ -13,7 +14,10 @@ use sqlx::PgPool;
 use templates::HomeTemplate;
 
 pub fn router() -> Router<AppState> {
-    Router::new().typed_get(home).typed_get(blog_post)
+    Router::new()
+        .typed_get(home)
+        .typed_get(blog_post)
+        .typed_get(tag)
 }
 
 #[derive(TypedPath, Deserialize)]
@@ -42,5 +46,18 @@ pub async fn blog_post(
         .ok_or(Error::NotFound)?;
 
     let html = BlogPostTemplate { blog_post }.render()?;
+    Ok(Html(html))
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/blog/tagged/:tag", rejection(Error))]
+pub struct TagPath {
+    pub tag: Tag,
+}
+
+pub async fn tag(TagPath { tag }: TagPath, State(database): State<PgPool>) -> Result<Html<String>> {
+    let blog_posts = database::get_public_blog_posts_for_tag(&tag, &database).await?;
+
+    let html = TagTemplate { tag, blog_posts }.render()?;
     Ok(Html(html))
 }

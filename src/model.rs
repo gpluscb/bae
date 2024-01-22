@@ -1,5 +1,6 @@
 use crate::server::blog::{BlogPostPath, TaggedPath};
 use serde::Deserialize;
+use sqlx::types::chrono::{DateTime, Utc};
 use std::fmt::{Display, Formatter};
 use std::time::SystemTime;
 
@@ -11,7 +12,7 @@ pub struct BlogPost {
     pub html: String,
     pub tags: Vec<Tag>,
     pub accessible: bool,
-    pub publication_date: Option<SystemTime>,
+    pub publication_date: Option<DateTime<Utc>>,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
@@ -40,6 +41,6 @@ impl BlogPost {
         self.accessible
             && self
                 .publication_date
-                .map_or(false, |date| date <= SystemTime::now())
+                .map_or(false, |date| date <= Utc::now())
     }
 }

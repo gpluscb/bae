@@ -1,5 +1,5 @@
 use crate::model::{BlogPost, Tag};
-use sqlx::types::time::PrimitiveDateTime;
+use sqlx::types::chrono::NaiveDateTime;
 use sqlx::{query_as, PgExecutor};
 use thiserror::Error;
 
@@ -20,7 +20,7 @@ struct BlogPostRecord {
     html: String,
     tags: Option<Vec<String>>,
     accessible: bool,
-    publication_date: Option<PrimitiveDateTime>,
+    publication_date: Option<NaiveDateTime>,
 }
 
 impl TryFrom<BlogPostRecord> for BlogPost {
@@ -38,8 +38,7 @@ impl TryFrom<BlogPostRecord> for BlogPost {
         }: BlogPostRecord,
     ) -> Result<Self> {
         let tags = tags.unwrap_or(Vec::new()).into_iter().map(Tag).collect();
-        let publication_date =
-            publication_date.map(|primitive_date_time| primitive_date_time.assume_utc().into());
+        let publication_date = publication_date.map(|timestamp| timestamp.and_utc());
 
         Ok(BlogPost {
             url,

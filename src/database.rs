@@ -1,6 +1,6 @@
 use crate::model::{BlogPost, Tag};
 use sqlx::types::chrono::NaiveDateTime;
-use sqlx::{query_as, PgExecutor};
+use sqlx::{query_as, query_scalar, PgExecutor};
 use thiserror::Error;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -88,6 +88,7 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
     .transpose()
 }
 
+// TODO: Can we get around all these fetch_all -> into_iter -> collects?
 pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
@@ -140,6 +141,21 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
     .into_iter()
     .map(BlogPost::try_from)
     .collect()
+}
+
+pub async fn get_tags<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<Tag>> {
+    let tags = query_scalar!(
+        "SELECT DISTINCT tag \
+        FROM tag \
+        ORDER BY tag ASC"
+    )
+    .fetch_all(executor)
+    .await?
+    .into_iter()
+    .map(Tag)
+    .collect();
+
+    Ok(tags)
 }
 
 // TODO: Tests

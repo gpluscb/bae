@@ -3,7 +3,7 @@
 {% block title %}{{ blog_post.title }}{% endblock %}
 
 {% block contents %}
-<div class="pb-0.5 border-b-2 border-black">
+<div class="pb-0.5 border-b border-black">
     <h1>{{ blog_post.title }}</h1>
     <p class="text-sm font-light">
         Tags: {% for tag in blog_post.tags -%}

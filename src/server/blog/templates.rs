@@ -19,3 +19,9 @@ pub struct TaggedTemplate {
     pub tag: Tag,
     pub blog_posts: Vec<BlogPost>,
 }
+
+#[derive(Template)]
+#[template(path = "blog/tags.html")]
+pub struct TagsTemplate {
+    pub tags: Vec<Tag>,
+}

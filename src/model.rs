@@ -2,7 +2,6 @@ use crate::server::blog::{BlogPostPath, TaggedPath};
 use serde::Deserialize;
 use sqlx::types::chrono::{DateTime, Utc};
 use std::fmt::{Display, Formatter};
-use std::time::SystemTime;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct BlogPost {

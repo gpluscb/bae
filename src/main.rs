@@ -6,8 +6,9 @@ use axum::extract::FromRef;
 use serde::Deserialize;
 use sqlx::{migrate, PgPool};
 use tokio::net::TcpListener;
+use tokio::signal;
 use tower_http::trace::TraceLayer;
-use tracing::{debug, error};
+use tracing::debug;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -59,7 +60,33 @@ async fn main() {
         listener.local_addr().expect("Cannot read local address")
     );
 
-    if let Err(error) = axum::serve(listener, app).await {
-        error!(%error, "Error serving");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .expect("Error serving");
+}
+
+// https://github.com/tokio-rs/axum/blob/d1fb14ead1063efe31ae3202e947ffd569875c0b/examples/graceful-shutdown/src/main.rs
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
     }
 }

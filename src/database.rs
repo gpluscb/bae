@@ -1,4 +1,5 @@
 use crate::model::{BlogPost, Tag};
+use futures::{StreamExt, TryStreamExt};
 use sqlx::types::chrono::NaiveDateTime;
 use sqlx::{query_as, query_scalar, PgExecutor};
 use thiserror::Error;
@@ -90,7 +91,6 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
     .transpose()
 }
 
-// TODO: Can we get around all these fetch_all -> into_iter -> collects?
 pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
@@ -99,11 +99,11 @@ pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Ve
         GROUP BY url \
         ORDER BY publication_date DESC"
     )
-    .fetch_all(executor)
-    .await?
-    .into_iter()
-    .map(BlogPost::try_from)
-    .collect()
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(|record| record.try_into()))
+    .try_collect()
+    .await
 }
 
 pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
@@ -116,11 +116,11 @@ pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result
         GROUP BY url \
         ORDER BY publication_date DESC"
     )
-    .fetch_all(executor)
-    .await?
-    .into_iter()
-    .map(BlogPost::try_from)
-    .collect()
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(|record| record.try_into()))
+    .try_collect()
+    .await
 }
 
 pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
@@ -138,26 +138,24 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
         ORDER BY publication_date DESC",
         tag.0,
     )
-    .fetch_all(executor)
-    .await?
-    .into_iter()
-    .map(BlogPost::try_from)
-    .collect()
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(|record| record.try_into()))
+    .try_collect()
+    .await
 }
 
 pub async fn get_tags<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<Tag>> {
-    let tags = query_scalar!(
+    query_scalar!(
         "SELECT DISTINCT tag \
         FROM tag \
         ORDER BY tag ASC"
     )
-    .fetch_all(executor)
-    .await?
-    .into_iter()
-    .map(Tag)
-    .collect();
-
-    Ok(tags)
+    .fetch(executor)
+    .map_ok(Tag)
+    .try_collect()
+    .await
+    .map_err(Error::from)
 }
 
 #[cfg(test)]

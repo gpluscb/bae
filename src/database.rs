@@ -109,7 +109,7 @@ pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result
         BlogPostRecord,
         "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
-        WHERE accessible AND publication_date IS NOT NULL \
+        WHERE publication_date IS NOT NULL \
             AND publication_date <= now() at time zone('utc') \
         GROUP BY url \
         ORDER BY publication_date DESC"
@@ -129,7 +129,7 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
         BlogPostRecord,
         "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
         FROM blog_post NATURAL JOIN tag \
-        WHERE accessible AND publication_date IS NOT NULL \
+        WHERE publication_date IS NOT NULL \
             AND publication_date <= now() at time zone('utc') \
             AND tag=$1 \
         GROUP BY url \

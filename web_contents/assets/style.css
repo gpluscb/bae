@@ -704,6 +704,10 @@ h6{
   --tw-gradient-to: #f3e8ff var(--tw-gradient-to-position);
 }
 
+.bg-fixed{
+  background-attachment: fixed;
+}
+
 .p-2{
   padding: 0.5rem;
 }

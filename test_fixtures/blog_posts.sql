@@ -1,6 +1,6 @@
 INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
 VALUES ('public', 'Test (Public)', 'test *bold*', 'test <b>bold</b>', false,
-        now() at time zone ('utc') - interval '2 years');
+        now() - interval '2 years');
 
 INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
 VALUES ('accessible', 'Test (Accessible)', 'test2', 'test2', true, null);
@@ -10,11 +10,11 @@ VALUES ('not_accessible', 'Test (Not Accessible)', 'test3', 'test3', false, null
 
 INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
 VALUES ('public_in_future', 'Test (Public in future)', 'test4', 'test4', false,
-        now() at time zone ('utc') + interval '100 years');
+        now() + interval '100 years');
 
 INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
 VALUES ('accessible_public_in_future', 'Test (Accessible, Public in future)', 'test5', 'test5', true,
-        now() at time zone ('utc') + interval '101 years');
+        now() + interval '101 years');
 
 INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
 VALUES ('long_post', 'Test (Longer blog post)',
@@ -215,4 +215,4 @@ Quis qui modi qui sed. Impedit commodi temporibus vero aliquam vero eveniet quid
 Ab incidunt minus esse dolorem. Dolor eius et suscipit quia aut voluptatem quia inventore. Et architecto natus sit fugit veritatis odit odit eum. A sint iusto praesentium doloremque.
 
 Perspiciatis voluptatem iste possimus. Blanditiis culpa similique minus est nihil odio. Non occaecati qui aliquam libero assumenda. Reiciendis cumque molestiae in.',
-        true, now() at time zone ('utc') - interval '1 year');
+        true, now() - interval '1 year');

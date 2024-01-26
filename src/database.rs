@@ -1,6 +1,6 @@
 use crate::model::{BlogPost, Tag};
 use futures::{StreamExt, TryStreamExt};
-use sqlx::types::chrono::NaiveDateTime;
+use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{query_as, query_scalar, PgExecutor};
 use thiserror::Error;
 
@@ -21,7 +21,7 @@ struct BlogPostRecord {
     html: String,
     tags: Option<Vec<String>>,
     accessible: bool,
-    publication_date: Option<NaiveDateTime>,
+    publication_date: Option<DateTime<Utc>>,
 }
 
 impl TryFrom<BlogPostRecord> for BlogPost {
@@ -39,7 +39,6 @@ impl TryFrom<BlogPostRecord> for BlogPost {
         }: BlogPostRecord,
     ) -> Result<Self> {
         let tags = tags.unwrap_or(Vec::new()).into_iter().map(Tag).collect();
-        let publication_date = publication_date.map(|timestamp| timestamp.and_utc());
 
         Ok(BlogPost {
             url,

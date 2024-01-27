@@ -5,7 +5,7 @@
         <a href="{{ blog_post.full_path() }}" class="hover:no-underline text-inherit hover:text-inherit">
             <div class="rounded-xl bg-purple-400 hover:bg-purple-700 p-2 mb-2">
                 <h2>{{ blog_post.title }}</h2>
-                <p>{{ blog_post.html|safe }}</p> {# TODO: replace with description #}
+                <p>{{ blog_post.description }}</p>
             </div>
         </a>
     </li>

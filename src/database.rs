@@ -1,8 +1,7 @@
 use crate::model::{Author, BlogPost, Tag};
+use chrono::{DateTime, Duration, Utc};
 use futures::{StreamExt, TryStreamExt};
-use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{query_as, query_scalar, PgExecutor};
-use std::time::Duration;
 use thiserror::Error;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -47,9 +46,8 @@ impl TryFrom<BlogPostRecord> for BlogPost {
     ) -> Result<Self> {
         let tags = tags.unwrap_or(Vec::new()).into_iter().map(Tag).collect();
         let author = Author(author);
-        let reading_time = Duration::from_secs(
-            60 * u64::try_from(reading_time_minutes).map_err(|_| Error::UnexpectedData)?,
-        );
+        let reading_time =
+            Duration::try_minutes(reading_time_minutes).ok_or(Error::UnexpectedData)?;
 
         Ok(BlogPost {
             url,
@@ -202,9 +200,9 @@ pub async fn get_tags<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<Tag>> {
 #[cfg(test)]
 mod tests {
     use crate::model::{Author, BlogPost};
+    use chrono::Duration;
     use sqlx::types::chrono::Utc;
     use sqlx::PgPool;
-    use std::time::Duration;
 
     fn is_sorted<T: PartialOrd, I: Iterator<Item = T>>(iter: &mut I) -> bool {
         let Some(mut previous) = iter.next() else {
@@ -236,7 +234,7 @@ mod tests {
             markdown: Some("test *bold*".to_string()),
             html: "test <b>bold</b>".to_string(),
             tags: vec![],
-            reading_time: Duration::from_secs(60),
+            reading_time: Duration::minutes(1),
             accessible: false,
             publication_date: public_post.publication_date,
         };
@@ -255,7 +253,7 @@ mod tests {
             markdown: Some("test2".to_string()),
             html: "test2".to_string(),
             tags: vec![],
-            reading_time: Duration::from_secs(60),
+            reading_time: Duration::minutes(1),
             accessible: true,
             publication_date: None,
         };
@@ -273,7 +271,7 @@ mod tests {
             markdown: Some("test3".to_string()),
             html: "test3".to_string(),
             tags: vec![],
-            reading_time: Duration::from_secs(60),
+            reading_time: Duration::minutes(1),
             accessible: false,
             publication_date: None,
         };
@@ -291,7 +289,7 @@ mod tests {
             markdown: Some("test4".to_string()),
             html: "test4".to_string(),
             tags: vec![],
-            reading_time: Duration::from_secs(60),
+            reading_time: Duration::minutes(1),
             accessible: false,
             publication_date: future_public_post.publication_date,
         };
@@ -313,7 +311,7 @@ mod tests {
             markdown: Some("test5".to_string()),
             html: "test5".to_string(),
             tags: vec![],
-            reading_time: Duration::from_secs(60),
+            reading_time: Duration::minutes(1),
             accessible: true,
             publication_date: accessible_future_public_post.publication_date,
         };
@@ -336,7 +334,7 @@ mod tests {
             markdown: long_post.markdown.clone(),
             html: long_post.html.clone(),
             tags: vec![],
-            reading_time: Duration::from_secs(60 * 60),
+            reading_time: Duration::minutes(60),
             accessible: true,
             publication_date: long_post.publication_date,
         };

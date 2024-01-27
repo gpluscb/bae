@@ -25,7 +25,7 @@ VALUES ('accessible_public_in_future', 'Test (Accessible, Public in future)', 'N
 
 INSERT INTO blog_post (url, title, description, author, markdown, html,
                        reading_time_minutes, accessible, publication_date)
-VALUES ('long_post', 'Test (Longer blog post)', 'No description', 'Quiet',
+VALUES ('long_post', 'Test (Longer blog post)', 'No description', 'gpluscb',
         e'Velit quod itaque autem et. Repellendus magnam aut repudiandae quisquam veritatis. At quaerat delectus quis eligendi. Consequuntur aliquam nemo vitae hic dolor soluta qui dicta. Sapiente labore sunt sint iusto non fugiat et tenetur.
 
 Unde temporibus mollitia qui qui assumenda culpa voluptatem. Repellat dignissimos nihil autem excepturi dolorem ut et. Et et accusamus ex voluptates fuga porro adipisci. Nulla voluptates vel suscipit et libero.

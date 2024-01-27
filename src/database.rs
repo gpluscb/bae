@@ -140,6 +140,29 @@ pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result
     .await
 }
 
+pub async fn get_public_blog_posts_for_author<'c, E: PgExecutor<'c>>(
+    author: &Author,
+    executor: E,
+) -> Result<Vec<BlogPost>> {
+    query_as!(
+        BlogPostRecord,
+        "SELECT url, title, description, author, markdown, html, \
+        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        FROM blog_post NATURAL JOIN tag \
+        WHERE publication_date IS NOT NULL \
+            AND publication_date <= now() at time zone('utc') \
+            AND author=$1 \
+        GROUP BY url \
+        ORDER BY publication_date DESC",
+        author.0,
+    )
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(|record| record.try_into()))
+    .try_collect()
+    .await
+}
+
 pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
     tag: &Tag,
     executor: E,
@@ -309,7 +332,7 @@ mod tests {
             url: "long_post".to_string(),
             title: "Test (Longer blog post)".to_string(),
             description: "No description".to_string(),
-            author: Author("Quiet".to_string()),
+            author: Author("gpluscb".to_string()),
             markdown: long_post.markdown.clone(),
             html: long_post.html.clone(),
             tags: vec![],
@@ -416,4 +439,5 @@ mod tests {
     }
 
     // TODO: Add tags tests
+    // TODO: Add authors tests
 }

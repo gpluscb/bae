@@ -660,6 +660,14 @@ h6{
   display: contents;
 }
 
+.h-0{
+  height: 0px;
+}
+
+.h-0\.5{
+  height: 0.125rem;
+}
+
 .h-screen{
   height: 100vh;
 }
@@ -674,10 +682,6 @@ h6{
 
 .rounded-xl{
   border-radius: 0.75rem;
-}
-
-.border-b{
-  border-bottom-width: 1px;
 }
 
 .border-black{
@@ -710,14 +714,6 @@ h6{
 
 .p-2{
   padding: 0.5rem;
-}
-
-.pb-0{
-  padding-bottom: 0px;
-}
-
-.pb-0\.5{
-  padding-bottom: 0.125rem;
 }
 
 .text-sm{

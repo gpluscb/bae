@@ -1,7 +1,8 @@
-use crate::model::{BlogPost, Tag};
+use crate::model::{Author, BlogPost, Tag};
 use futures::{StreamExt, TryStreamExt};
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{query_as, query_scalar, PgExecutor};
+use std::time::Duration;
 use thiserror::Error;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -17,9 +18,12 @@ pub enum Error {
 struct BlogPostRecord {
     url: String,
     title: String,
+    description: String,
+    author: String,
     markdown: Option<String>,
     html: String,
     tags: Option<Vec<String>>,
+    reading_time_minutes: i64,
     accessible: bool,
     publication_date: Option<DateTime<Utc>>,
 }
@@ -31,21 +35,31 @@ impl TryFrom<BlogPostRecord> for BlogPost {
         BlogPostRecord {
             url,
             title,
+            description,
+            author,
             markdown,
             html,
             tags,
+            reading_time_minutes,
             accessible,
             publication_date,
         }: BlogPostRecord,
     ) -> Result<Self> {
         let tags = tags.unwrap_or(Vec::new()).into_iter().map(Tag).collect();
+        let author = Author(author);
+        let reading_time = Duration::from_secs(
+            60 * u64::try_from(reading_time_minutes).map_err(|_| Error::UnexpectedData)?,
+        );
 
         Ok(BlogPost {
             url,
             title,
+            description,
+            author,
             markdown,
             html,
             tags,
+            reading_time,
             accessible,
             publication_date,
         })
@@ -58,7 +72,8 @@ pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, \
+        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
          FROM blog_post NATURAL LEFT JOIN tag \
          WHERE url=$1 \
          GROUP BY url",
@@ -76,7 +91,8 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, \
+        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
          FROM blog_post NATURAL LEFT JOIN tag \
          WHERE url=$1 AND (accessible OR \
             (publication_date IS NOT NULL \
@@ -93,7 +109,8 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
 pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, \
+        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
         GROUP BY url \
         ORDER BY publication_date DESC"
@@ -108,7 +125,8 @@ pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Ve
 pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, \
+        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
         WHERE publication_date IS NOT NULL \
             AND publication_date <= now() at time zone('utc') \
@@ -128,7 +146,8 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
 ) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, markdown, html, accessible, publication_date, array_agg(tag) as tags \
+        "SELECT url, title, description, author, markdown, html, \
+        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL JOIN tag \
         WHERE publication_date IS NOT NULL \
             AND publication_date <= now() at time zone('utc') \
@@ -159,9 +178,10 @@ pub async fn get_tags<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<Tag>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::BlogPost;
+    use crate::model::{Author, BlogPost};
     use sqlx::types::chrono::Utc;
     use sqlx::PgPool;
+    use std::time::Duration;
 
     fn is_sorted<T: PartialOrd, I: Iterator<Item = T>>(iter: &mut I) -> bool {
         let Some(mut previous) = iter.next() else {
@@ -177,7 +197,7 @@ mod tests {
         })
     }
 
-    #[sqlx::test(fixtures(path = "../test_fixtures", scripts("blog_posts")))]
+    #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts")))]
     pub async fn blog_post_tests(pool: PgPool) -> super::Result<()> {
         // Test if all the data looks alright
 
@@ -188,9 +208,12 @@ mod tests {
         let expected_public_post = BlogPost {
             url: "public".to_string(),
             title: "Test (Public)".to_string(),
+            description: "No description".to_string(),
+            author: Author("Quiet".to_string()),
             markdown: Some("test *bold*".to_string()),
             html: "test <b>bold</b>".to_string(),
             tags: vec![],
+            reading_time: Duration::from_secs(60),
             accessible: false,
             publication_date: public_post.publication_date,
         };
@@ -204,9 +227,12 @@ mod tests {
         let expected_accessible_post = BlogPost {
             url: "accessible".to_string(),
             title: "Test (Accessible)".to_string(),
+            description: "No description".to_string(),
+            author: Author("Quiet".to_string()),
             markdown: Some("test2".to_string()),
             html: "test2".to_string(),
             tags: vec![],
+            reading_time: Duration::from_secs(60),
             accessible: true,
             publication_date: None,
         };
@@ -219,9 +245,12 @@ mod tests {
         let expected_inaccessible_post = BlogPost {
             url: "not_accessible".to_string(),
             title: "Test (Not Accessible)".to_string(),
+            description: "No description".to_string(),
+            author: Author("Quiet".to_string()),
             markdown: Some("test3".to_string()),
             html: "test3".to_string(),
             tags: vec![],
+            reading_time: Duration::from_secs(60),
             accessible: false,
             publication_date: None,
         };
@@ -234,9 +263,12 @@ mod tests {
         let expected_future_public_post = BlogPost {
             url: "public_in_future".to_string(),
             title: "Test (Public in future)".to_string(),
+            description: "No description".to_string(),
+            author: Author("Quiet".to_string()),
             markdown: Some("test4".to_string()),
             html: "test4".to_string(),
             tags: vec![],
+            reading_time: Duration::from_secs(60),
             accessible: false,
             publication_date: future_public_post.publication_date,
         };
@@ -253,9 +285,12 @@ mod tests {
         let expected_accessible_future_public_post = BlogPost {
             url: "accessible_public_in_future".to_string(),
             title: "Test (Accessible, Public in future)".to_string(),
+            description: "No description".to_string(),
+            author: Author("Quiet".to_string()),
             markdown: Some("test5".to_string()),
             html: "test5".to_string(),
             tags: vec![],
+            reading_time: Duration::from_secs(60),
             accessible: true,
             publication_date: accessible_future_public_post.publication_date,
         };
@@ -273,9 +308,12 @@ mod tests {
         let expected_long_post = BlogPost {
             url: "long_post".to_string(),
             title: "Test (Longer blog post)".to_string(),
+            description: "No description".to_string(),
+            author: Author("Quiet".to_string()),
             markdown: long_post.markdown.clone(),
             html: long_post.html.clone(),
             tags: vec![],
+            reading_time: Duration::from_secs(60 * 60),
             accessible: true,
             publication_date: long_post.publication_date,
         };

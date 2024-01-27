@@ -1,23 +1,31 @@
-INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
-VALUES ('public', 'Test (Public)', 'test *bold*', 'test <b>bold</b>', false,
-        now() - interval '2 years');
+INSERT INTO blog_post (url, title, description, author, markdown, html,
+                       reading_time_minutes, accessible, publication_date)
+VALUES ('public', 'Test (Public)', 'No description', 'Quiet', 'test *bold*', 'test <b>bold</b>',
+        1, false, now() - interval '2 years');
 
-INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
-VALUES ('accessible', 'Test (Accessible)', 'test2', 'test2', true, null);
+INSERT INTO blog_post (url, title, description, author, markdown, html,
+                       reading_time_minutes, accessible, publication_date)
+VALUES ('accessible', 'Test (Accessible)', 'No description', 'Quiet', 'test2', 'test2',
+        1, true, null);
 
-INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
-VALUES ('not_accessible', 'Test (Not Accessible)', 'test3', 'test3', false, null);
+INSERT INTO blog_post (url, title, description, author, markdown, html,
+                       reading_time_minutes, accessible, publication_date)
+VALUES ('not_accessible', 'Test (Not Accessible)', 'No description', 'Quiet', 'test3', 'test3',
+        1, false, null);
 
-INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
-VALUES ('public_in_future', 'Test (Public in future)', 'test4', 'test4', false,
-        now() + interval '100 years');
+INSERT INTO blog_post (url, title, description, author, markdown, html,
+                       reading_time_minutes, accessible, publication_date)
+VALUES ('public_in_future', 'Test (Public in future)', 'No description', 'Quiet', 'test4', 'test4',
+        1, false, now() + interval '100 years');
 
-INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
-VALUES ('accessible_public_in_future', 'Test (Accessible, Public in future)', 'test5', 'test5', true,
-        now() + interval '101 years');
+INSERT INTO blog_post (url, title, description, author, markdown, html,
+                       reading_time_minutes, accessible, publication_date)
+VALUES ('accessible_public_in_future', 'Test (Accessible, Public in future)', 'No description', 'Quiet', 'test5', 'test5',
+        1, true, now() + interval '101 years');
 
-INSERT INTO blog_post (url, title, markdown, html, accessible, publication_date)
-VALUES ('long_post', 'Test (Longer blog post)',
+INSERT INTO blog_post (url, title, description, author, markdown, html,
+                       reading_time_minutes, accessible, publication_date)
+VALUES ('long_post', 'Test (Longer blog post)', 'No description', 'Quiet',
         e'Velit quod itaque autem et. Repellendus magnam aut repudiandae quisquam veritatis. At quaerat delectus quis eligendi. Consequuntur aliquam nemo vitae hic dolor soluta qui dicta. Sapiente labore sunt sint iusto non fugiat et tenetur.
 
 Unde temporibus mollitia qui qui assumenda culpa voluptatem. Repellat dignissimos nihil autem excepturi dolorem ut et. Et et accusamus ex voluptates fuga porro adipisci. Nulla voluptates vel suscipit et libero.
@@ -215,4 +223,4 @@ Quis qui modi qui sed. Impedit commodi temporibus vero aliquam vero eveniet quid
 Ab incidunt minus esse dolorem. Dolor eius et suscipit quia aut voluptatem quia inventore. Et architecto natus sit fugit veritatis odit odit eum. A sint iusto praesentium doloremque.
 
 Perspiciatis voluptatem iste possimus. Blanditiis culpa similique minus est nihil odio. Non occaecati qui aliquam libero assumenda. Reiciendis cumque molestiae in.',
-        true, now() - interval '1 year');
+        60, true, now() - interval '1 year');

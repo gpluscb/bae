@@ -151,8 +151,8 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
         FROM blog_post NATURAL JOIN tag \
         WHERE publication_date IS NOT NULL \
             AND publication_date <= now() at time zone('utc') \
-            AND tag=$1 \
         GROUP BY url \
+        HAVING bool_or(tag=$1) \
         ORDER BY publication_date DESC",
         tag.0,
     )

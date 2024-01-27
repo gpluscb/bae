@@ -1,4 +1,5 @@
 pub mod database;
+pub mod markdown_render;
 pub mod model;
 pub mod server;
 

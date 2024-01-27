@@ -1,3 +1,4 @@
+use crate::markdown_render::render_md_to_html;
 use crate::server::blog::{BlogPostPath, TaggedPath};
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
@@ -48,10 +49,6 @@ fn generate_reading_time(content: &str) -> Duration {
     Duration::minutes((content.split_whitespace().count() / AVERAGE_READING_WPM) as i64)
 }
 
-fn generate_html_from_md(markdown: &str) -> String {
-    todo!()
-}
-
 impl MdOrHtml {
     pub fn contents(&self) -> &str {
         match self {
@@ -93,7 +90,7 @@ impl PartialBlogPost {
         let reading_time = generate_reading_time(contents.contents());
         let (markdown, html) = match contents {
             MdOrHtml::Markdown(md) => {
-                let html = generate_html_from_md(&md);
+                let html = render_md_to_html(&md);
                 (Some(md), html)
             }
             MdOrHtml::Html(html) => (None, html),

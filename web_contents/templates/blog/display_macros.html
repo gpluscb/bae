@@ -1,5 +1,5 @@
 {% macro display_posts(blog_posts) %}
-<ul class="mt-1">
+<ul>
     {% for blog_post in blog_posts %}
     <li class="list-none">
         <a href="{{ blog_post.full_path() }}" class="hover:no-underline text-inherit hover:text-inherit">

@@ -3,9 +3,12 @@ pub mod markdown_render;
 pub mod model;
 pub mod server;
 
+use crate::markdown_render::CodeBlockHighlighter;
 use axum::extract::FromRef;
+use comrak::{ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
 use sqlx::{migrate, PgPool};
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
@@ -19,9 +22,11 @@ struct Env {
     database_url: String,
 }
 
-#[derive(Clone, Debug, FromRef)]
+#[derive(Clone, FromRef)]
 pub struct AppState {
     database: PgPool,
+    highlighter: Arc<CodeBlockHighlighter>,
+    comrak_options: Arc<comrak::Options>,
 }
 
 #[tokio::main]
@@ -47,7 +52,35 @@ async fn main() {
         .await
         .expect("Database migration failed");
 
-    let app_state = AppState { database };
+    let highlighter = Arc::new(
+        CodeBlockHighlighter::standard_config()
+            .expect("Loading CodeBlockHighlighter config failed"),
+    );
+
+    let comrak_options = Arc::new(comrak::Options {
+        extension: ExtensionOptionsBuilder::default()
+            .strikethrough(true)
+            .tagfilter(true)
+            .table(true)
+            .autolink(true)
+            .tasklist(true)
+            .superscript(true)
+            .footnotes(true)
+            .multiline_block_quotes(true)
+            .build()
+            .expect("Building ExtensionOptions failed"),
+        parse: ParseOptionsBuilder::default().smart(true).build().unwrap(),
+        render: RenderOptionsBuilder::default()
+            .unsafe_(true)
+            .build()
+            .expect("Building RenderOptions failed"),
+    });
+
+    let app_state = AppState {
+        database,
+        highlighter,
+        comrak_options,
+    };
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::router().layer(tracing_layer).with_state(app_state);

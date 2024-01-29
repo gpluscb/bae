@@ -75,7 +75,11 @@ impl MdOrHtml {
 }
 
 impl PartialBlogPost {
-    pub fn generate_blog_post(self, highlighter: &CodeBlockHighlighter) -> BlogPost {
+    pub fn generate_blog_post(
+        self,
+        comrak_options: &comrak::Options,
+        highlighter: &CodeBlockHighlighter,
+    ) -> BlogPost {
         let PartialBlogPost {
             url,
             title,
@@ -90,7 +94,7 @@ impl PartialBlogPost {
         let reading_time = generate_reading_time(contents.contents());
         let (markdown, html) = match contents {
             MdOrHtml::Markdown(md) => {
-                let html = render_md_to_html(&md, highlighter);
+                let html = render_md_to_html(&md, comrak_options, highlighter);
                 (Some(md), html)
             }
             MdOrHtml::Html(html) => (None, html),

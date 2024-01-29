@@ -1,11 +1,10 @@
 use comrak::adapters::SyntaxHighlighterAdapter;
-use comrak::{
-    markdown_to_html_with_plugins, ExtensionOptionsBuilder, Options, ParseOptionsBuilder,
-    PluginsBuilder, RenderOptionsBuilder, RenderPluginsBuilder,
-};
+use comrak::{markdown_to_html_with_plugins, Options, PluginsBuilder, RenderPluginsBuilder};
 use std::collections::HashMap;
 use std::io::Write;
-use tracing::warn;
+use thiserror::Error;
+use tracing::{error, warn};
+use tree_sitter::QueryError;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, HighlightEvent, Highlighter};
 
 pub const HIGHLIGHT_NAMES: [&str; 29] = [
@@ -40,17 +39,30 @@ pub const HIGHLIGHT_NAMES: [&str; 29] = [
     "variable.parameter",
 ];
 
-// So the reason we don't use anything pre-made to roll our html is because we can't.
-// If we used ClassedHtmlGenerator, that's not Send, so it's impossible to use with SyntaxHighlighterAdapter.
-// Everything else in syntect's html module that doesn't output classes but coloured spans also doesn't work.
-// That's because it assumes we have exactly one theme, and there is no way to modify the css output.
-// Specifically comrak's SyntectAdapter too.
-// So it's inevitably going to be a problem once we support dark mode.
-// So yea syntect is frustrating, cannot recommend.
-// The documentation is bad, the api is bad, and the code is fine at best too. Don't want to be mean but AAAAAAAAAAAAAA.
-// It took me three days to start to arrive at the conclusion that we have to do this manually...
+#[derive()]
 pub struct CodeBlockHighlighter {
     pub languages: HashMap<&'static str, HighlightConfiguration>,
+}
+
+impl CodeBlockHighlighter {
+    pub fn standard_config() -> Result<Self, QueryError> {
+        let rust = || {
+            let mut rust = HighlightConfiguration::new(
+                tree_sitter_rust::language(),
+                tree_sitter_rust::HIGHLIGHT_QUERY,
+                tree_sitter_rust::INJECTIONS_QUERY,
+                "",
+            )?;
+            rust.configure(&HIGHLIGHT_NAMES);
+            Ok(rust)
+        };
+
+        let mut languages = HashMap::new();
+        languages.insert("rust", rust()?);
+        languages.insert("rs", rust()?);
+
+        Ok(CodeBlockHighlighter { languages })
+    }
 }
 
 impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
@@ -71,29 +83,51 @@ impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
             return Ok(());
         };
 
-        // TODO: eliminate unwraps
-        let mut highlighter = Highlighter::new();
-        let highlights = highlighter
-            .highlight(config, code.as_bytes(), None, |_| None)
-            .unwrap();
-
-        for highlight in highlights {
-            let highlight = highlight.unwrap();
-
-            match highlight {
-                HighlightEvent::Source { start, end } => {
-                    output.write_all(code[start..end].as_bytes())?;
-                }
-                HighlightEvent::HighlightStart(Highlight(i)) => {
-                    write!(output, r#"<span class="highlight.{}">"#, HIGHLIGHT_NAMES[i])?;
-                }
-                HighlightEvent::HighlightEnd => {
-                    output.write_all(b"</span>")?;
-                }
-            }
+        #[derive(Debug, Error)]
+        enum TryHighlightError {
+            #[error("IO error: {0}")]
+            Io(#[from] std::io::Error),
+            #[error("tree-sitter-highlight error: {0}")]
+            Highlight(#[from] tree_sitter_highlight::Error),
         }
 
-        Ok(())
+        fn try_highlight(
+            config: &HighlightConfiguration,
+            output: &mut dyn Write,
+            code: &str,
+        ) -> Result<(), TryHighlightError> {
+            let mut highlighter = Highlighter::new();
+            // Collect early so we can fall back to full plain text in case of error
+            // instead of having highlighted bits already in the output
+            let highlights: Vec<_> = highlighter
+                .highlight(config, code.as_bytes(), None, |_| None)?
+                .collect::<Result<_, _>>()?;
+
+            for highlight in highlights {
+                match highlight {
+                    HighlightEvent::Source { start, end } => {
+                        output.write_all(code[start..end].as_bytes())?;
+                    }
+                    HighlightEvent::HighlightStart(Highlight(i)) => {
+                        write!(output, r#"<span class="highlight.{}">"#, HIGHLIGHT_NAMES[i])?;
+                    }
+                    HighlightEvent::HighlightEnd => {
+                        output.write_all(b"</span>")?;
+                    }
+                }
+            }
+
+            Ok(())
+        }
+
+        match try_highlight(config, output, code) {
+            Ok(()) => Ok(()),
+            Err(TryHighlightError::Io(err)) => Err(err),
+            Err(TryHighlightError::Highlight(err)) => {
+                error!(%err, "Error trying to highlight, falling back to plain text");
+                output.write_all(code.as_bytes())
+            }
+        }
     }
 
     fn write_pre_tag(
@@ -121,27 +155,12 @@ impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
     }
 }
 
-pub fn render_md_to_html(markdown: &str, highlighter: &CodeBlockHighlighter) -> String {
-    // TOOD: Make this once_cell or function argument
-    let options = Options {
-        extension: ExtensionOptionsBuilder::default()
-            .strikethrough(true)
-            .tagfilter(true)
-            .table(true)
-            .autolink(true)
-            .tasklist(true)
-            .superscript(true)
-            .footnotes(true)
-            .multiline_block_quotes(true)
-            .build()
-            .unwrap(),
-        parse: ParseOptionsBuilder::default().smart(true).build().unwrap(),
-        render: RenderOptionsBuilder::default()
-            .unsafe_(true)
-            .build()
-            .unwrap(),
-    };
-
+pub fn render_md_to_html(
+    markdown: &str,
+    options: &Options,
+    highlighter: &CodeBlockHighlighter,
+) -> String {
+    // TODO: eliminate unwraps
     let plugins = PluginsBuilder::default()
         .render(
             RenderPluginsBuilder::default()
@@ -152,7 +171,7 @@ pub fn render_md_to_html(markdown: &str, highlighter: &CodeBlockHighlighter) -> 
         .build()
         .unwrap();
 
-    markdown_to_html_with_plugins(markdown, &options, &plugins)
+    markdown_to_html_with_plugins(markdown, options, &plugins)
 }
 
 // TODO: Tests

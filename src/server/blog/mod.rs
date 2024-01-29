@@ -1,6 +1,6 @@
 pub mod templates;
 
-use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter, HIGHLIGHT_NAMES};
+use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter};
 use crate::model::Tag;
 use crate::server::blog::templates::{
     BlogPostTemplate, TaggedTemplate, TagsTemplate, TestTemplate,
@@ -15,9 +15,8 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 use sqlx::PgPool;
-use std::collections::HashMap;
+use std::sync::Arc;
 use templates::HomeTemplate;
-use tree_sitter_highlight::HighlightConfiguration;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -28,25 +27,10 @@ pub fn router() -> Router<AppState> {
         .typed_get(tags)
 }
 
-pub async fn test() -> Result<Html<String>> {
-    let rust = || {
-        let mut rust = HighlightConfiguration::new(
-            tree_sitter_rust::language(),
-            tree_sitter_rust::HIGHLIGHT_QUERY,
-            tree_sitter_rust::INJECTIONS_QUERY,
-            "",
-        )
-        .unwrap();
-        rust.configure(&HIGHLIGHT_NAMES);
-        rust
-    };
-
-    let mut languages = HashMap::new();
-    languages.insert("rust", rust());
-    languages.insert("rs", rust());
-
-    let highlighter = CodeBlockHighlighter { languages };
-
+pub async fn test(
+    State(comrak_options): State<Arc<comrak::Options>>,
+    State(highlighter): State<Arc<CodeBlockHighlighter>>,
+) -> Result<Html<String>> {
     let markdown = r#"Hi **bold** _italic_
 
 | Table | Yeah |
@@ -60,7 +44,7 @@ pub fn main() {
 }
 ```"#;
 
-    let test_md_rendered = render_md_to_html(markdown, &highlighter);
+    let test_md_rendered = render_md_to_html(markdown, &comrak_options, &highlighter);
     let html = TestTemplate { test_md_rendered }.render()?;
 
     Ok(Html(html))

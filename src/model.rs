@@ -1,4 +1,4 @@
-use crate::markdown_render::render_md_to_html;
+use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter};
 use crate::server::blog::{BlogPostPath, TaggedPath};
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
@@ -75,7 +75,7 @@ impl MdOrHtml {
 }
 
 impl PartialBlogPost {
-    pub fn generate_blog_post(self) -> BlogPost {
+    pub fn generate_blog_post(self, highlighter: &CodeBlockHighlighter) -> BlogPost {
         let PartialBlogPost {
             url,
             title,
@@ -90,7 +90,7 @@ impl PartialBlogPost {
         let reading_time = generate_reading_time(contents.contents());
         let (markdown, html) = match contents {
             MdOrHtml::Markdown(md) => {
-                let html = render_md_to_html(&md);
+                let html = render_md_to_html(&md, highlighter);
                 (Some(md), html)
             }
             MdOrHtml::Html(html) => (None, html),

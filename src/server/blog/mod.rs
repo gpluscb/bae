@@ -1,24 +1,69 @@
 pub mod templates;
 
+use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter, HIGHLIGHT_NAMES};
 use crate::model::Tag;
-use crate::server::blog::templates::{BlogPostTemplate, TaggedTemplate, TagsTemplate};
+use crate::server::blog::templates::{
+    BlogPostTemplate, TaggedTemplate, TagsTemplate, TestTemplate,
+};
 use crate::server::{Error, Result};
 use crate::{database, AppState};
 use askama::Template;
 use axum::extract::State;
 use axum::response::Html;
+use axum::routing::get;
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 use sqlx::PgPool;
+use std::collections::HashMap;
 use templates::HomeTemplate;
+use tree_sitter_highlight::HighlightConfiguration;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/blog/test", get(test))
         .typed_get(home)
         .typed_get(blog_post)
         .typed_get(tagged)
         .typed_get(tags)
+}
+
+pub async fn test() -> Result<Html<String>> {
+    let rust = || {
+        let mut rust = HighlightConfiguration::new(
+            tree_sitter_rust::language(),
+            tree_sitter_rust::HIGHLIGHT_QUERY,
+            tree_sitter_rust::INJECTIONS_QUERY,
+            "",
+        )
+        .unwrap();
+        rust.configure(&HIGHLIGHT_NAMES);
+        rust
+    };
+
+    let mut languages = HashMap::new();
+    languages.insert("rust", rust());
+    languages.insert("rs", rust());
+
+    let highlighter = CodeBlockHighlighter { languages };
+
+    let markdown = r#"Hi **bold** _italic_
+
+| Table | Yeah |
+| ----- | ---- |
+| Thing | Woo  |
+| Line  | No 2 |
+
+```rs
+pub fn main() {
+    println!("Code Block!!");
+}
+```"#;
+
+    let test_md_rendered = render_md_to_html(markdown, &highlighter);
+    let html = TestTemplate { test_md_rendered }.render()?;
+
+    Ok(Html(html))
 }
 
 #[derive(TypedPath, Deserialize)]

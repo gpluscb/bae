@@ -2,6 +2,12 @@ use crate::model::{BlogPost, Tag};
 use askama::Template;
 
 #[derive(Template)]
+#[template(path = "blog/test.html")]
+pub struct TestTemplate {
+    pub test_md_rendered: String,
+}
+
+#[derive(Template)]
 #[template(path = "blog/home.html")]
 pub struct HomeTemplate {
     pub blog_posts: Vec<BlogPost>,

@@ -1,9 +1,10 @@
 pub mod database;
+pub mod highlighting;
 pub mod markdown_render;
 pub mod model;
 pub mod server;
 
-use crate::markdown_render::CodeBlockHighlighter;
+use crate::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use axum::extract::FromRef;
 use comrak::{ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
@@ -16,6 +17,8 @@ use tracing::debug;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
+pub type StandardCodeBlockHighlighter = CodeBlockHighlighter<StandardClassNameGenerator>;
+
 #[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
 struct Env {
     socket_address: String,
@@ -25,7 +28,7 @@ struct Env {
 #[derive(Clone, FromRef)]
 pub struct AppState {
     database: PgPool,
-    highlighter: Arc<CodeBlockHighlighter>,
+    highlighter: Arc<StandardCodeBlockHighlighter>,
     comrak_options: Arc<comrak::Options>,
 }
 

@@ -1,50 +1,32 @@
+use crate::highlighting::{
+    write_html_highlight_end, write_html_highlight_start, CssClassNameGenerator, HIGHLIGHT_NAMES,
+};
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::{markdown_to_html_with_plugins, Options, PluginsBuilder, RenderPluginsBuilder};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Write;
 use thiserror::Error;
 use tracing::{error, warn};
 use tree_sitter::QueryError;
-use tree_sitter_highlight::{Highlight, HighlightConfiguration, HighlightEvent, Highlighter};
+use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
-pub const HIGHLIGHT_NAMES: [&str; 29] = [
-    "attribute",
-    "carriage-return",
-    "comment",
-    "constant",
-    "constant.builtin",
-    "constructor",
-    "constructor.builtin",
-    "embedded",
-    "escape",
-    "function",
-    "function.builtin",
-    "keyword",
-    "number",
-    "module",
-    "operator",
-    "property",
-    "property.builtin",
-    "punctuation",
-    "punctuation.bracket",
-    "punctuation.delimiter",
-    "punctuation.special",
-    "string",
-    "string.special",
-    "tag",
-    "type",
-    "type.builtin",
-    "variable",
-    "variable.builtin",
-    "variable.parameter",
-];
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
+pub struct StandardClassNameGenerator;
 
-#[derive()]
-pub struct CodeBlockHighlighter {
-    pub languages: HashMap<&'static str, HighlightConfiguration>,
+impl CssClassNameGenerator for StandardClassNameGenerator {
+    fn class_for_highlight(&self, highlight_name: &str, _highlight_idx: usize) -> Option<Cow<str>> {
+        Some(Cow::Owned(format!("highlight.{highlight_name}")))
+    }
 }
 
-impl CodeBlockHighlighter {
+#[derive()]
+pub struct CodeBlockHighlighter<G> {
+    pub languages: HashMap<&'static str, HighlightConfiguration>,
+    pub class_name_generator: G,
+}
+
+impl CodeBlockHighlighter<StandardClassNameGenerator> {
     pub fn standard_config() -> Result<Self, QueryError> {
         let rust = || {
             let mut rust = HighlightConfiguration::new(
@@ -61,25 +43,28 @@ impl CodeBlockHighlighter {
         languages.insert("rust", rust()?);
         languages.insert("rs", rust()?);
 
-        Ok(CodeBlockHighlighter { languages })
+        Ok(CodeBlockHighlighter {
+            languages,
+            class_name_generator: StandardClassNameGenerator,
+        })
     }
 }
 
-impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
+impl<G: CssClassNameGenerator + Send + Sync> SyntaxHighlighterAdapter for CodeBlockHighlighter<G> {
     fn write_highlighted(
         &self,
-        output: &mut dyn Write,
+        out: &mut dyn Write,
         lang: Option<&str>,
         code: &str,
     ) -> std::io::Result<()> {
         let Some(lang) = lang else {
-            output.write_all(code.as_bytes())?;
+            out.write_all(code.as_bytes())?;
             return Ok(());
         };
 
         let Some(config) = self.languages.get(lang) else {
             warn!(lang, "Unrecognised language, falling back to plain text");
-            output.write_all(code.as_bytes())?;
+            out.write_all(code.as_bytes())?;
             return Ok(());
         };
 
@@ -91,9 +76,10 @@ impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
             Highlight(#[from] tree_sitter_highlight::Error),
         }
 
-        fn try_highlight(
+        fn try_highlight<G: CssClassNameGenerator>(
             config: &HighlightConfiguration,
-            output: &mut dyn Write,
+            class_name_generator: &G,
+            out: &mut dyn Write,
             code: &str,
         ) -> Result<(), TryHighlightError> {
             let mut highlighter = Highlighter::new();
@@ -106,13 +92,19 @@ impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
             for highlight in highlights {
                 match highlight {
                     HighlightEvent::Source { start, end } => {
-                        output.write_all(code[start..end].as_bytes())?;
+                        out.write_all(code[start..end].as_bytes())?;
                     }
-                    HighlightEvent::HighlightStart(Highlight(i)) => {
-                        write!(output, r#"<span class="highlight.{}">"#, HIGHLIGHT_NAMES[i])?;
+                    HighlightEvent::HighlightStart(highlight) => {
+                        write_html_highlight_start(
+                            out,
+                            highlight,
+                            "span",
+                            &HashMap::new(),
+                            class_name_generator,
+                        )?;
                     }
                     HighlightEvent::HighlightEnd => {
-                        output.write_all(b"</span>")?;
+                        write_html_highlight_end(out, "span")?;
                     }
                 }
             }
@@ -120,12 +112,12 @@ impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
             Ok(())
         }
 
-        match try_highlight(config, output, code) {
+        match try_highlight(config, &self.class_name_generator, out, code) {
             Ok(()) => Ok(()),
             Err(TryHighlightError::Io(err)) => Err(err),
             Err(TryHighlightError::Highlight(err)) => {
                 error!(%err, "Error trying to highlight, falling back to plain text");
-                output.write_all(code.as_bytes())
+                out.write_all(code.as_bytes())
             }
         }
     }
@@ -155,10 +147,10 @@ impl SyntaxHighlighterAdapter for CodeBlockHighlighter {
     }
 }
 
-pub fn render_md_to_html(
+pub fn render_md_to_html<G: CssClassNameGenerator + Send + Sync>(
     markdown: &str,
     options: &Options,
-    highlighter: &CodeBlockHighlighter,
+    highlighter: &CodeBlockHighlighter<G>,
 ) -> String {
     // TODO: eliminate unwraps
     let plugins = PluginsBuilder::default()

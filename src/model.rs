@@ -1,3 +1,4 @@
+use crate::highlighting::CssClassNameGenerator;
 use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter};
 use crate::server::blog::{BlogPostPath, TaggedPath};
 use chrono::{DateTime, Duration, Utc};
@@ -75,10 +76,10 @@ impl MdOrHtml {
 }
 
 impl PartialBlogPost {
-    pub fn generate_blog_post(
+    pub fn generate_blog_post<G: CssClassNameGenerator + Send + Sync>(
         self,
         comrak_options: &comrak::Options,
-        highlighter: &CodeBlockHighlighter,
+        highlighter: &CodeBlockHighlighter<G>,
     ) -> BlogPost {
         let PartialBlogPost {
             url,

@@ -261,6 +261,7 @@ dependencies = [
  "dotenv",
  "envy",
  "futures",
+ "itertools",
  "serde",
  "sqlx",
  "thiserror",

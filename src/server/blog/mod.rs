@@ -1,12 +1,12 @@
 pub mod templates;
 
-use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter};
+use crate::markdown_render::render_md_to_html;
 use crate::model::Tag;
 use crate::server::blog::templates::{
     BlogPostTemplate, TaggedTemplate, TagsTemplate, TestTemplate,
 };
 use crate::server::{Error, Result};
-use crate::{database, AppState};
+use crate::{database, AppState, StandardCodeBlockHighlighter};
 use askama::Template;
 use axum::extract::State;
 use axum::response::Html;
@@ -29,7 +29,7 @@ pub fn router() -> Router<AppState> {
 
 pub async fn test(
     State(comrak_options): State<Arc<comrak::Options>>,
-    State(highlighter): State<Arc<CodeBlockHighlighter>>,
+    State(highlighter): State<Arc<StandardCodeBlockHighlighter>>,
 ) -> Result<Html<String>> {
     let markdown = r#"Hi **bold** _italic_
 

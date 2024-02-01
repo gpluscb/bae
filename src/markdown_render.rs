@@ -11,12 +11,19 @@ use tracing::{error, warn};
 use tree_sitter::QueryError;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
-pub struct StandardClassNameGenerator;
+#[derive(Clone, Eq, PartialEq, Default, Debug)]
+pub struct StandardClassNameGenerator {
+    pub class_prefix: String,
+}
 
 impl CssClassNameGenerator for StandardClassNameGenerator {
     fn class_for_highlight(&self, highlight_name: &str, _highlight_idx: usize) -> Option<Cow<str>> {
-        Some(Cow::Owned(format!("highlight.{highlight_name}")))
+        let mut output = self.class_prefix.clone();
+        if !output.is_empty() {
+            output.push('.');
+        }
+        output.push_str(highlight_name);
+        Some(Cow::Owned(output))
     }
 }
 
@@ -27,7 +34,7 @@ pub struct CodeBlockHighlighter<G> {
 }
 
 impl CodeBlockHighlighter<StandardClassNameGenerator> {
-    pub fn standard_config() -> Result<Self, QueryError> {
+    pub fn standard_config(class_prefix: String) -> Result<Self, QueryError> {
         let rust = || {
             let mut rust = HighlightConfiguration::new(
                 tree_sitter_rust::language(),
@@ -45,7 +52,7 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
 
         Ok(CodeBlockHighlighter {
             languages,
-            class_name_generator: StandardClassNameGenerator,
+            class_name_generator: StandardClassNameGenerator { class_prefix },
         })
     }
 }

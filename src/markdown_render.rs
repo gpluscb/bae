@@ -11,7 +11,7 @@ use tracing::{error, warn};
 use tree_sitter::QueryError;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
-#[derive(Clone, Eq, PartialEq, Default, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StandardClassNameGenerator {
     pub class_prefix: String,
 }

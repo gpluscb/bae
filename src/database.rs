@@ -94,7 +94,7 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
          FROM blog_post NATURAL LEFT JOIN tag \
          WHERE url=$1 AND (accessible OR \
             (publication_date IS NOT NULL \
-            AND publication_date <= now() at time zone('utc'))) \
+            AND publication_date <= now())) \
          GROUP BY url",
         url
     )
@@ -115,7 +115,7 @@ pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Ve
     )
     .fetch(executor)
     .map_err(Error::from)
-    .map(|result| result.and_then(|record| record.try_into()))
+    .map(|result| result.and_then(BlogPost::try_from))
     .try_collect()
     .await
 }
@@ -127,13 +127,13 @@ pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result
         reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
         WHERE publication_date IS NOT NULL \
-            AND publication_date <= now() at time zone('utc') \
+            AND publication_date <= now() \
         GROUP BY url \
         ORDER BY publication_date DESC"
     )
     .fetch(executor)
     .map_err(Error::from)
-    .map(|result| result.and_then(|record| record.try_into()))
+    .map(|result| result.and_then(BlogPost::try_from))
     .try_collect()
     .await
 }
@@ -148,7 +148,7 @@ pub async fn get_public_blog_posts_for_author<'c, E: PgExecutor<'c>>(
         reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL JOIN tag \
         WHERE publication_date IS NOT NULL \
-            AND publication_date <= now() at time zone('utc') \
+            AND publication_date <= now() \
             AND author=$1 \
         GROUP BY url \
         ORDER BY publication_date DESC",
@@ -156,7 +156,7 @@ pub async fn get_public_blog_posts_for_author<'c, E: PgExecutor<'c>>(
     )
     .fetch(executor)
     .map_err(Error::from)
-    .map(|result| result.and_then(|record| record.try_into()))
+    .map(|result| result.and_then(BlogPost::try_from))
     .try_collect()
     .await
 }
@@ -171,7 +171,7 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
         reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL JOIN tag \
         WHERE publication_date IS NOT NULL \
-            AND publication_date <= now() at time zone('utc') \
+            AND publication_date <= now() \
         GROUP BY url \
         HAVING bool_or(tag=$1) \
         ORDER BY publication_date DESC",
@@ -179,7 +179,7 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
     )
     .fetch(executor)
     .map_err(Error::from)
-    .map(|result| result.and_then(|record| record.try_into()))
+    .map(|result| result.and_then(BlogPost::try_from))
     .try_collect()
     .await
 }

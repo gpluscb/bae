@@ -219,7 +219,10 @@ mod tests {
     }
 
     // TODO: Move fixtures and migrations into common crate
-    #[sqlx::test(fixtures(path = "../../test_fixtures", scripts("authors", "blog_posts")))]
+    #[sqlx::test(
+        migrations = "../migrations",
+        fixtures(path = "../../test_fixtures", scripts("authors", "blog_posts"))
+    )]
     pub async fn blog_post_tests(pool: PgPool) -> super::Result<()> {
         // Test if all the data looks alright
 

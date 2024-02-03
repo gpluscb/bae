@@ -2,9 +2,6 @@ pub mod templates;
 
 use crate::markdown_render::render_md_to_html;
 use crate::model::Tag;
-use crate::server::blog::templates::{
-    BlogPostTemplate, TaggedTemplate, TagsTemplate, TestTemplate,
-};
 use crate::server::{Error, Result};
 use crate::{database, AppState, StandardCodeBlockHighlighter};
 use askama::Template;
@@ -16,7 +13,7 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
-use templates::HomeTemplate;
+use templates::{BlogPostTemplate, HomeTemplate, TaggedTemplate, TagsTemplate, TestTemplate};
 
 pub fn router() -> Router<AppState> {
     Router::new()

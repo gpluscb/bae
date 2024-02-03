@@ -2,11 +2,12 @@ pub mod model;
 pub mod server;
 
 use axum::extract::FromRef;
+use bae_common::database;
 use bae_common::highlighting::Theme;
 use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use comrak::{ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
-use sqlx::{migrate, PgPool};
+use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::signal;
@@ -49,8 +50,7 @@ async fn main() {
         .await
         .expect("Could not connect to database");
 
-    migrate!("../migrations")
-        .run(&database)
+    database::migrate(&database)
         .await
         .expect("Database migration failed");
 

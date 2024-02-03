@@ -1,7 +1,9 @@
 use crate::blog::{Author, BlogPost, Tag};
 use chrono::{DateTime, Duration, Utc};
 use futures::{StreamExt, TryStreamExt};
-use sqlx::{query_as, query_scalar, PgExecutor};
+use sqlx::migrate::Migrate;
+use sqlx::{migrate, query_as, query_scalar, Acquire, PgExecutor};
+use std::ops::Deref;
 use thiserror::Error;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -64,6 +66,18 @@ impl TryFrom<BlogPostRecord> for BlogPost {
     }
 }
 
+pub async fn migrate<'a, A>(migrator: A) -> Result<()>
+where
+    A: Acquire<'a>,
+    <A::Connection as Deref>::Target: Migrate,
+{
+    migrate!()
+        .run(migrator)
+        .await
+        .map_err(sqlx::Error::from)
+        .map_err(Error::from)
+}
+
 pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
     url: &str,
     executor: E,
@@ -77,10 +91,10 @@ pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
          GROUP BY url",
         url
     )
-        .fetch_optional(executor)
-        .await?
-        .map(BlogPost::try_from)
-        .transpose()
+    .fetch_optional(executor)
+    .await?
+    .map(BlogPost::try_from)
+    .transpose()
 }
 
 pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
@@ -98,10 +112,10 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
          GROUP BY url",
         url
     )
-        .fetch_optional(executor)
-        .await?
-        .map(BlogPost::try_from)
-        .transpose()
+    .fetch_optional(executor)
+    .await?
+    .map(BlogPost::try_from)
+    .transpose()
 }
 
 pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
@@ -113,11 +127,11 @@ pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Ve
         GROUP BY url \
         ORDER BY publication_date DESC"
     )
-        .fetch(executor)
-        .map_err(Error::from)
-        .map(|result| result.and_then(BlogPost::try_from))
-        .try_collect()
-        .await
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(BlogPost::try_from))
+    .try_collect()
+    .await
 }
 
 pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
@@ -131,11 +145,11 @@ pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result
         GROUP BY url \
         ORDER BY publication_date DESC"
     )
-        .fetch(executor)
-        .map_err(Error::from)
-        .map(|result| result.and_then(BlogPost::try_from))
-        .try_collect()
-        .await
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(BlogPost::try_from))
+    .try_collect()
+    .await
 }
 
 pub async fn get_public_blog_posts_for_author<'c, E: PgExecutor<'c>>(
@@ -154,11 +168,11 @@ pub async fn get_public_blog_posts_for_author<'c, E: PgExecutor<'c>>(
         ORDER BY publication_date DESC",
         author.0,
     )
-        .fetch(executor)
-        .map_err(Error::from)
-        .map(|result| result.and_then(BlogPost::try_from))
-        .try_collect()
-        .await
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(BlogPost::try_from))
+    .try_collect()
+    .await
 }
 
 pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
@@ -177,11 +191,11 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
         ORDER BY publication_date DESC",
         tag.0,
     )
-        .fetch(executor)
-        .map_err(Error::from)
-        .map(|result| result.and_then(BlogPost::try_from))
-        .try_collect()
-        .await
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(BlogPost::try_from))
+    .try_collect()
+    .await
 }
 
 pub async fn get_tags<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<Tag>> {
@@ -218,11 +232,7 @@ mod tests {
         })
     }
 
-    // TODO: Move fixtures and migrations into common crate
-    #[sqlx::test(
-        migrations = "../migrations",
-        fixtures(path = "../../test_fixtures", scripts("authors", "blog_posts"))
-    )]
+    #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts")))]
     pub async fn blog_post_tests(pool: PgPool) -> super::Result<()> {
         // Test if all the data looks alright
 

@@ -2,7 +2,7 @@ use itertools::Itertools;
 use serde::de::{Error as DeserializeError, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::Write;
 use std::ops::Deref;
 use tree_sitter_highlight::Highlight;
@@ -66,7 +66,7 @@ pub struct Style {
 // TODO: Background color?
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Theme {
-    pub styles: HashMap<usize, Style>,
+    pub styles: BTreeMap<usize, Style>,
 }
 
 pub trait CssClassNameGenerator {
@@ -128,12 +128,7 @@ impl Theme {
         out: &mut W,
         class_name_generator: &G,
     ) -> std::io::Result<()> {
-        // Sort to make rule order deterministic
-        for (&highlight_idx, style) in self
-            .styles
-            .iter()
-            .sorted_unstable_by_key(|(&idx, _style)| idx)
-        {
+        for (&highlight_idx, style) in &self.styles {
             if let Some(class) = class_name_generator
                 .class_for_highlight(HIGHLIGHT_NAMES[highlight_idx], highlight_idx)
             {
@@ -217,7 +212,7 @@ impl<'de> Deserialize<'de> for Theme {
                     })
                 },
             )
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
 
         Ok(Theme { styles })
     }

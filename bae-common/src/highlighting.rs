@@ -128,7 +128,12 @@ impl Theme {
         out: &mut W,
         class_name_generator: &G,
     ) -> std::io::Result<()> {
-        for (&highlight_idx, style) in &self.styles {
+        // Sort to make rule order deterministic
+        for (&highlight_idx, style) in self
+            .styles
+            .iter()
+            .sorted_unstable_by_key(|(&idx, _style)| idx)
+        {
             if let Some(class) = class_name_generator
                 .class_for_highlight(HIGHLIGHT_NAMES[highlight_idx], highlight_idx)
             {

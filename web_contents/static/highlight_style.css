@@ -1,55 +1,55 @@
-.highlight-string {
-  color: rgb(25, 130, 0);
+.highlight-attribute {
+  color: rgb(0, 70, 70);
 }
-.highlight-type {
+.highlight-comment {
+  color: rgb(100, 100, 100);
+}
+.highlight-constructor {
   color: rgb(35, 70, 210);
 }
-.highlight-punctuation-special {
-  color: rgb(0, 0, 0);
-}
-.highlight-string-special {
-  color: rgb(25, 130, 0);
+.highlight-constructor-builtin {
+  color: rgb(35, 70, 210);
 }
 .highlight-escape {
   color: rgb(220, 0, 100);
 }
-.highlight-number {
-  color: rgb(10, 15, 20);
+.highlight-function {
+  color: rgb(200, 85, 10);
 }
-.highlight-punctuation-bracket {
-  color: rgb(0, 0, 0);
-}
-.highlight-type-builtin {
-  color: rgb(35, 70, 210);
+.highlight-function-builtin {
+  color: rgb(200, 85, 10);
 }
 .highlight-keyword {
   color: rgb(255, 65, 160);
   font-weight: bold;
 }
+.highlight-number {
+  color: rgb(10, 15, 20);
+}
+.highlight-operator {
+  color: rgb(0, 0, 0);
+}
 .highlight-punctuation {
   color: rgb(0, 0, 0);
 }
-.highlight-comment {
-  color: rgb(100, 100, 100);
-}
-.highlight-constructor-builtin {
-  color: rgb(35, 70, 210);
-}
-.highlight-attribute {
-  color: rgb(0, 70, 70);
-}
-.highlight-constructor {
-  color: rgb(35, 70, 210);
-}
-.highlight-operator {
+.highlight-punctuation-bracket {
   color: rgb(0, 0, 0);
 }
 .highlight-punctuation-delimiter {
   color: rgb(0, 0, 0);
 }
-.highlight-function-builtin {
-  color: rgb(200, 85, 10);
+.highlight-punctuation-special {
+  color: rgb(0, 0, 0);
 }
-.highlight-function {
-  color: rgb(200, 85, 10);
+.highlight-string {
+  color: rgb(25, 130, 0);
+}
+.highlight-string-special {
+  color: rgb(25, 130, 0);
+}
+.highlight-type {
+  color: rgb(35, 70, 210);
+}
+.highlight-type-builtin {
+  color: rgb(35, 70, 210);
 }

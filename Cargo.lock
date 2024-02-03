@@ -255,6 +255,19 @@ version = "0.1.0"
 [[package]]
 name = "bae-common"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+ "comrak",
+ "futures",
+ "itertools",
+ "serde",
+ "sqlx",
+ "thiserror",
+ "tracing",
+ "tree-sitter",
+ "tree-sitter-highlight",
+ "tree-sitter-rust",
+]
 
 [[package]]
 name = "bae-server"

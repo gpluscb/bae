@@ -27,6 +27,14 @@ impl CssClassNameGenerator for StandardClassNameGenerator {
     }
 }
 
+impl StandardClassNameGenerator {
+    pub fn standard_generator() -> Self {
+        StandardClassNameGenerator {
+            class_prefix: "highlight".to_string(),
+        }
+    }
+}
+
 #[derive()]
 pub struct CodeBlockHighlighter<G> {
     pub languages: HashMap<&'static str, HighlightConfiguration>,
@@ -34,7 +42,7 @@ pub struct CodeBlockHighlighter<G> {
 }
 
 impl CodeBlockHighlighter<StandardClassNameGenerator> {
-    pub fn standard_config(class_prefix: String) -> Result<Self, QueryError> {
+    pub fn standard_config() -> Result<Self, QueryError> {
         let rust = || {
             let mut rust = HighlightConfiguration::new(
                 tree_sitter_rust::language(),
@@ -52,7 +60,7 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
 
         Ok(CodeBlockHighlighter {
             languages,
-            class_name_generator: StandardClassNameGenerator { class_prefix },
+            class_name_generator: StandardClassNameGenerator::standard_generator(),
         })
     }
 }

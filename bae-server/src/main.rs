@@ -55,7 +55,7 @@ async fn main() {
         .expect("Database migration failed");
 
     let highlighter = Arc::new(
-        CodeBlockHighlighter::standard_config("highlight".to_string())
+        CodeBlockHighlighter::standard_config()
             .expect("Loading CodeBlockHighlighter config failed"),
     );
 

@@ -1,0 +1,31 @@
+[package]
+name = "bae-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum.workspace = true
+axum-extra.workspace = true
+tokio.workspace = true
+futures.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+askama.workspace = true
+comrak.workspace = true
+tree-sitter.workspace = true
+tree-sitter-rust.workspace = true
+tree-sitter-highlight.workspace = true
+sqlx.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+envy.workspace = true
+dotenv.workspace = true
+thiserror.workspace = true
+itertools.workspace = true
+chrono.workspace = true
+
+[build-dependencies]
+cc = "1.0"

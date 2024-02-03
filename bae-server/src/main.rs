@@ -52,7 +52,7 @@ async fn main() {
         .await
         .expect("Could not connect to database");
 
-    migrate!()
+    migrate!("../migrations")
         .run(&database)
         .await
         .expect("Database migration failed");
@@ -82,7 +82,7 @@ async fn main() {
     });
 
     let light_highlight_theme = serde_json::from_str(include_str!(
-        "../web_contents/highlighting_themes/light.json"
+        "../../web_contents/highlighting_themes/light.json"
     ))
     .expect("Loading light highlight theme failed");
 

@@ -249,7 +249,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "bae"
+name = "bae-cli"
+version = "0.1.0"
+
+[[package]]
+name = "bae-common"
+version = "0.1.0"
+
+[[package]]
+name = "bae-server"
 version = "0.1.0"
 dependencies = [
  "askama",

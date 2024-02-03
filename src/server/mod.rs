@@ -1,14 +1,18 @@
 pub mod blog;
 pub mod templates;
 
-use crate::{database, AppState};
+use crate::highlighting::Theme;
+use crate::{database, AppState, StandardCodeBlockHighlighter};
 use askama::Template;
 use axum::extract::rejection::PathRejection;
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
+use axum_extra::response::Css;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
+use std::sync::Arc;
 use templates::{ErrorTemplate, HomeTemplate};
 use thiserror::Error;
 use tower_http::services::ServeDir;
@@ -57,6 +61,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(home)
         .typed_get(robots)
+        .typed_get(highlight_style_css)
         .merge(blog::router())
         .nest_service("/assets", ServeDir::new("web_contents/assets"))
         .fallback(|| async { Error::NotFound })
@@ -77,4 +82,22 @@ pub struct RobotsPath {}
 
 pub async fn robots(RobotsPath {}: RobotsPath) -> &'static str {
     include_str!("../../web_contents/robots.txt")
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/highlight_style.css")]
+pub struct StyleCssPath {}
+
+pub async fn highlight_style_css(
+    StyleCssPath {}: StyleCssPath,
+    State(theme): State<Theme>,
+    State(highlighter): State<Arc<StandardCodeBlockHighlighter>>,
+) -> Result<Css<Vec<u8>>> {
+    let mut css = Vec::new();
+    // TODO: No unwrap
+    theme
+        .write_css_with_class_names(&mut css, &highlighter.class_name_generator)
+        .unwrap();
+
+    Ok(Css(css))
 }

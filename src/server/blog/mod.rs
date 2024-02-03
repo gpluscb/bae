@@ -31,7 +31,8 @@ pub async fn test(
     State(comrak_options): State<Arc<comrak::Options>>,
     State(highlighter): State<Arc<StandardCodeBlockHighlighter>>,
 ) -> Result<Html<String>> {
-    let markdown = r#"Hi **bold** _italic_
+    let markdown = format!(
+        r#"Hi **bold** _italic_
 
 | Table | Yeah |
 | ----- | ---- |
@@ -39,12 +40,17 @@ pub async fn test(
 | Line  | No 2 |
 
 ```rs
-pub fn main() {
-    println!("Code Block!!");
-}
-```"#;
+fn number_example() {{
+    // Also a nice comment example
+    let i = 20;
+}}
 
-    let test_md_rendered = render_md_to_html(markdown, &comrak_options, &highlighter);
+{}
+```"#,
+        include_str!("mod.rs")
+    );
+
+    let test_md_rendered = render_md_to_html(&markdown, &comrak_options, &highlighter);
     let html = TestTemplate { test_md_rendered }.render()?;
 
     Ok(Html(html))

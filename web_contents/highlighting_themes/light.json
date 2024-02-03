@@ -1,0 +1,129 @@
+[
+  {
+    "highlight_names": [
+      "keyword"
+    ],
+    "style": {
+      "color": {
+        "r": 255,
+        "g": 65,
+        "b": 160,
+        "a": null
+      },
+      "bold": true
+    }
+  },
+  {
+    "highlight_names": [
+      "comment"
+    ],
+    "style": {
+      "color": {
+        "r": 100,
+        "g": 100,
+        "b": 100,
+        "a": null
+      }
+    }
+  },
+  {
+    "highlight_names": [
+      "function",
+      "function.builtin"
+    ],
+    "style": {
+      "color": {
+        "r": 200,
+        "g": 85,
+        "b": 10,
+        "a": null
+      }
+    }
+  },
+  {
+    "highlight_names": [
+      "escape"
+    ],
+    "style": {
+      "color": {
+        "r": 220,
+        "g": 0,
+        "b": 100,
+        "a": null
+      }
+    }
+  },
+  {
+    "highlight_names": [
+      "number"
+    ],
+    "style": {
+      "color": {
+        "r": 10,
+        "g": 15,
+        "b": 20,
+        "a": null
+      }
+    }
+  },
+  {
+    "highlight_names": [
+      "attribute"
+    ],
+    "style": {
+      "color": {
+        "r": 0,
+        "g": 70,
+        "b": 70,
+        "a": null
+      }
+    }
+  },
+  {
+    "highlight_names": [
+      "operator",
+      "punctuation",
+      "punctuation.bracket",
+      "punctuation.delimiter",
+      "punctuation.special"
+    ],
+    "style": {
+      "color": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": null
+      }
+    }
+  },
+  {
+    "highlight_names": [
+      "string",
+      "string.special"
+    ],
+    "style": {
+      "color": {
+        "r": 25,
+        "g": 130,
+        "b": 0,
+        "a": null
+      }
+    }
+  },
+  {
+    "highlight_names": [
+      "type",
+      "type.builtin",
+      "constructor",
+      "constructor.builtin"
+    ],
+    "style": {
+      "color": {
+        "r": 35,
+        "g": 70,
+        "b": 210,
+        "a": null
+      }
+    }
+  }
+]

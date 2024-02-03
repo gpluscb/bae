@@ -4,6 +4,7 @@ pub mod markdown_render;
 pub mod model;
 pub mod server;
 
+use crate::highlighting::Theme;
 use crate::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use axum::extract::FromRef;
 use comrak::{ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
@@ -30,6 +31,7 @@ pub struct AppState {
     database: PgPool,
     highlighter: Arc<StandardCodeBlockHighlighter>,
     comrak_options: Arc<comrak::Options>,
+    light_highlight_theme: Theme,
 }
 
 #[tokio::main]
@@ -79,10 +81,16 @@ async fn main() {
             .expect("Building RenderOptions failed"),
     });
 
+    let light_highlight_theme = serde_json::from_str(include_str!(
+        "../web_contents/highlighting_themes/light.json"
+    ))
+    .expect("Loading light highlight theme failed");
+
     let app_state = AppState {
         database,
         highlighter,
         comrak_options,
+        light_highlight_theme,
     };
 
     let tracing_layer = TraceLayer::new_for_http();

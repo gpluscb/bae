@@ -16,6 +16,7 @@
     ul {
         @apply list-disc;
     }
+
     ol {
         @apply list-decimal;
     }
@@ -23,19 +24,28 @@
     h1 {
         @apply text-4xl font-normal;
     }
+
     h2 {
         @apply text-3xl font-light;
     }
+
     h3 {
         @apply text-2xl font-extralight;
     }
+
     h4 {
         @apply text-xl font-thin
     }
+
     h5 {
         @apply text-lg font-thin
     }
+
     h6 {
         @apply text-base font-thin
     }
+}
+
+.code-block {
+    overflow: auto;
 }

@@ -20,9 +20,9 @@ impl CssClassNameGenerator for StandardClassNameGenerator {
     fn class_for_highlight(&self, highlight_name: &str, _highlight_idx: usize) -> Option<Cow<str>> {
         let mut output = self.class_prefix.clone();
         if !output.is_empty() {
-            output.push('.');
+            output.push('-');
         }
-        output.push_str(highlight_name);
+        output.push_str(&highlight_name.replace('.', "-"));
         Some(Cow::Owned(output))
     }
 }

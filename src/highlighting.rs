@@ -1,5 +1,6 @@
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use serde::de::{Error as DeserializeError, Unexpected};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Write;
@@ -38,25 +39,32 @@ pub const HIGHLIGHT_NAMES: [&str; 29] = [
     "variable.parameter",
 ];
 
+// TODO: Nicer deserialization/serialization
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
     pub b: u8,
+    #[serde(default)]
     pub a: Option<u8>,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Default, Debug, Serialize, Deserialize)]
 pub struct Style {
+    #[serde(default)]
     pub color: Option<Color>,
+    #[serde(default)]
     pub bg_color: Option<Color>,
+    #[serde(default)]
     pub bold: bool,
+    #[serde(default)]
     pub underline: bool,
+    #[serde(default)]
     pub italic: bool,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
-#[serde(transparent)]
+// TODO: Background color?
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Theme {
     pub styles: HashMap<usize, Style>,
 }
@@ -118,7 +126,7 @@ impl Theme {
     pub fn write_css_with_class_names<W: Write, G: CssClassNameGenerator>(
         &self,
         out: &mut W,
-        class_name_generator: &mut G,
+        class_name_generator: &G,
     ) -> std::io::Result<()> {
         for (&highlight_idx, style) in &self.styles {
             if let Some(class) = class_name_generator
@@ -127,14 +135,86 @@ impl Theme {
                 writeln!(out, ".{class} {{")?;
 
                 for declaration in style.to_css_declarations() {
-                    writeln!(out, "{declaration}")?;
+                    writeln!(out, "  {declaration}")?;
                 }
 
-                out.write_all(b"}")?;
+                out.write_all(b"}\n")?;
             }
         }
 
         Ok(())
+    }
+}
+
+impl Serialize for Theme {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        #[derive(Serialize)]
+        #[serde(transparent)]
+        struct IntermediateStyle<'a>(Vec<IntermediateStyleRule<'a>>);
+
+        #[derive(Serialize)]
+        struct IntermediateStyleRule<'a> {
+            highlight_names: Vec<&'a str>,
+            style: Style,
+        }
+
+        let rules = self
+            .styles
+            .iter()
+            .map(|(&idx, &style)| IntermediateStyleRule {
+                highlight_names: vec![HIGHLIGHT_NAMES[idx]],
+                style,
+            })
+            .collect();
+
+        IntermediateStyle(rules).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Theme {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(transparent)]
+        struct IntermediateStyle(Vec<IntermediateStyleRule>);
+
+        #[derive(Deserialize)]
+        struct IntermediateStyleRule {
+            highlight_names: Vec<String>,
+            style: Style,
+        }
+
+        let IntermediateStyle(rules) = IntermediateStyle::deserialize(deserializer)?;
+
+        let styles = rules
+            .into_iter()
+            .flat_map(
+                |IntermediateStyleRule {
+                     highlight_names,
+                     style,
+                 }| {
+                    highlight_names.into_iter().map(move |name| {
+                        HIGHLIGHT_NAMES
+                            .into_iter()
+                            .find_position(|&highlight_name| highlight_name == name)
+                            .ok_or_else(|| {
+                                DeserializeError::invalid_value(
+                                    Unexpected::Str(&name),
+                                    &"Valid HIGHLIGHT_NAME",
+                                )
+                            })
+                            .map(|(position, _)| (position, style))
+                    })
+                },
+            )
+            .collect::<Result<HashMap<_, _>, _>>()?;
+
+        Ok(Theme { styles })
     }
 }
 

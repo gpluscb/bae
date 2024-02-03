@@ -276,13 +276,11 @@ dependencies = [
  "askama",
  "axum",
  "axum-extra",
+ "bae-common",
  "cc",
- "chrono",
  "comrak",
  "dotenv",
  "envy",
- "futures",
- "itertools",
  "serde",
  "serde_json",
  "sqlx",
@@ -291,9 +289,6 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
- "tree-sitter-highlight",
- "tree-sitter-rust",
 ]
 
 [[package]]

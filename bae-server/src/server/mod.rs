@@ -1,8 +1,7 @@
 pub mod blog;
 pub mod templates;
 
-use crate::highlighting::Theme;
-use crate::{database, AppState, StandardCodeBlockHighlighter};
+use crate::{AppState, StandardCodeBlockHighlighter};
 use askama::Template;
 use axum::extract::rejection::PathRejection;
 use axum::extract::State;
@@ -12,6 +11,8 @@ use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use axum_extra::response::Css;
 use axum_extra::routing::{RouterExt, TypedPath};
+use bae_common::database;
+use bae_common::highlighting::Theme;
 use serde::Deserialize;
 use std::sync::Arc;
 use templates::{ErrorTemplate, HomeTemplate};

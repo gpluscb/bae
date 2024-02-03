@@ -1,12 +1,9 @@
-pub mod database;
-pub mod highlighting;
-pub mod markdown_render;
 pub mod model;
 pub mod server;
 
-use crate::highlighting::Theme;
-use crate::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use axum::extract::FromRef;
+use bae_common::highlighting::Theme;
+use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use comrak::{ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
 use sqlx::{migrate, PgPool};

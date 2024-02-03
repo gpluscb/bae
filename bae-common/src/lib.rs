@@ -1,4 +1,4 @@
-mod blog;
-mod database;
-mod highlighting;
-mod markdown_render;
+pub mod blog;
+pub mod database;
+pub mod highlighting;
+pub mod markdown_render;

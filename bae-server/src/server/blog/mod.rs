@@ -1,15 +1,16 @@
 pub mod templates;
 
-use crate::markdown_render::render_md_to_html;
-use crate::model::Tag;
 use crate::server::{Error, Result};
-use crate::{database, AppState, StandardCodeBlockHighlighter};
+use crate::{AppState, StandardCodeBlockHighlighter};
 use askama::Template;
 use axum::extract::State;
 use axum::response::Html;
 use axum::routing::get;
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
+use bae_common::blog::Tag;
+use bae_common::database;
+use bae_common::markdown_render::render_md_to_html;
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;

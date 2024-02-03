@@ -3,6 +3,8 @@ use bae_common::markdown_render::StandardClassNameGenerator;
 use clap::{Parser, Subcommand};
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 #[derive(Clone, Eq, PartialEq, Debug, Subcommand)]
 enum Command {
@@ -22,6 +24,15 @@ struct Args {
 
 fn main() {
     _ = dotenv::dotenv();
+
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "bae_cli=debug,bae_common=debug,tower_http=debug,axum::rejection=trace,sqlx=debug".into()
+            }),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     let args = Args::parse();
 

@@ -10,3 +10,4 @@ bae-common = { path = "../bae-common" }
 dotenv.workspace = true
 clap.workspace = true
 serde_json.workspace = true
+tracing-subscriber.workspace = true

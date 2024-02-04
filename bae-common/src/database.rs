@@ -2,7 +2,7 @@ use crate::blog::{Author, BlogPost, Tag};
 use chrono::{DateTime, Duration, Utc};
 use futures::{StreamExt, TryStreamExt};
 use sqlx::migrate::Migrate;
-use sqlx::{migrate, query_as, query_scalar, Acquire, PgExecutor};
+use sqlx::{migrate, query, query_as, query_scalar, Acquire, PgExecutor, Postgres, Transaction};
 use std::ops::Deref;
 use thiserror::Error;
 
@@ -14,6 +14,8 @@ pub enum Error {
     Sqlx(#[from] sqlx::Error),
     #[error("Database returned unexpected data")]
     UnexpectedData,
+    #[error("Input was invalid")]
+    InvalidInput,
 }
 
 struct BlogPostRecord {
@@ -209,6 +211,65 @@ pub async fn get_tags<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<Tag>> {
     .try_collect()
     .await
     .map_err(Error::from)
+}
+
+pub async fn insert_blog_post<'c>(
+    BlogPost {
+        url,
+        title,
+        description,
+        author,
+        markdown,
+        html,
+        tags,
+        reading_time,
+        accessible,
+        publication_date,
+    }: BlogPost,
+    new_author: bool,
+    transaction: &mut Transaction<'c, Postgres>,
+) -> Result<()> {
+    // Insert author (if new)
+    if new_author {
+        query!(
+            "INSERT INTO author (author) \
+            VALUES ($1)",
+            author.0,
+        )
+        .execute(&mut **transaction)
+        .await?;
+    }
+
+    // Insert blog post
+    query!(
+        "INSERT INTO blog_post (url, title, description, author, markdown, html, reading_time_minutes, accessible, publication_date) \
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        url,
+        title,
+        description,
+        author.0,
+        markdown,
+        html,
+        i32::try_from(reading_time.num_minutes()).map_err(|_| Error::InvalidInput)?,
+        accessible,
+        publication_date,
+    )
+    .execute(&mut **transaction)
+    .await?;
+
+    // Insert tags
+    for Tag(tag) in tags {
+        query!(
+            "INSERT INTO tag (tag, url) \
+            VALUES ($1, $2)",
+            tag,
+            url,
+        )
+        .execute(&mut **transaction)
+        .await?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -452,4 +513,5 @@ mod tests {
 
     // TODO: Add tags tests
     // TODO: Add authors tests
+    // TODO: Add insert tests
 }

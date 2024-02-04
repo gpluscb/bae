@@ -61,6 +61,7 @@ async fn main() {
 
     let comrak_options = Arc::new(comrak::Options {
         extension: ExtensionOptionsBuilder::default()
+            .front_matter_delimiter(Some("---".to_string()))
             .strikethrough(true)
             .tagfilter(true)
             .table(true)

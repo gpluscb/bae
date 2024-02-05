@@ -4,16 +4,15 @@ use bae_common::highlighting::Theme;
 use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use chrono::{DateTime, Utc};
 use clap::{Parser, Subcommand};
+use color_eyre::eyre::{OptionExt, WrapErr};
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::{Arena, ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use thiserror::Error;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tree_sitter::QueryError;
 
 #[derive(Clone, Eq, PartialEq, Debug, Subcommand)]
 enum Command {
@@ -84,24 +83,6 @@ fn generate_highlight_css(input_theme: &Path, output_file: &Path) -> std::io::Re
     Ok(())
 }
 
-#[derive(Debug, Error)]
-enum UploadBlogPostError {
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("Invalid front matter: {0}")]
-    InvalidFrontMatter(serde_json::Error),
-    #[error("No front matter in markdown")]
-    NoFrontMatter,
-    #[error("Standard config returned error: {0}")]
-    BadStandardConfig(QueryError),
-    #[error("Set DATABASE_URL environment variable")]
-    NoDatabaseUrl,
-    #[error("SQLx error: {0}")]
-    Sqlx(#[from] sqlx::Error),
-    #[error("Database error: {0}")]
-    Database(#[from] database::Error),
-}
-
 #[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
 struct FrontMatter {
     pub url: String,
@@ -113,7 +94,7 @@ struct FrontMatter {
     pub publication_date: Option<DateTime<Utc>>,
 }
 
-async fn upload_blog_post(md_file: &Path, new_author: bool) -> Result<(), UploadBlogPostError> {
+async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Result<()> {
     let markdown = std::fs::read_to_string(md_file)?;
 
     // TODO: very duped, server shouldn't need comrak anyway in the future
@@ -149,10 +130,10 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> Result<(), Upload
         }
     }
 
-    let front_matter_str = take_front_matter(root).ok_or(UploadBlogPostError::NoFrontMatter)?;
+    let front_matter_str = take_front_matter(root).ok_or_eyre("No front matter in markdown")?;
 
-    let front_matter: FrontMatter =
-        serde_json::from_str(&front_matter_str).map_err(UploadBlogPostError::InvalidFrontMatter)?;
+    let front_matter: FrontMatter = serde_json::from_str(&front_matter_str)
+        .wrap_err("Front matter was not the correct json format")?;
 
     let partial_post = PartialBlogPost {
         url: front_matter.url,
@@ -167,17 +148,17 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> Result<(), Upload
 
     let full_post = partial_post.generate_blog_post(
         &options,
-        &CodeBlockHighlighter::standard_config().map_err(UploadBlogPostError::BadStandardConfig)?,
+        &CodeBlockHighlighter::standard_config()
+            .wrap_err("Getting standard CodeBlockHighlighter config failed")?,
     );
 
-    let database_url =
-        std::env::var("DATABASE_URL").map_err(|_| UploadBlogPostError::NoDatabaseUrl)?;
+    let database_url = std::env::var("DATABASE_URL").wrap_err("DATABASE_URL env var error")?;
     let database = PgPool::connect(&database_url)
         .await
-        .expect("Could not connect to database");
+        .wrap_err("Could not connect to database")?;
 
     let mut transaction = database.begin().await?;
     database::insert_blog_post(full_post, new_author, &mut transaction)
         .await
-        .map_err(UploadBlogPostError::from)
+        .wrap_err("Inserting blog post failed")
 }

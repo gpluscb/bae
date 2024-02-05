@@ -10,7 +10,7 @@ bae-common = { path = "../bae-common" }
 dotenv.workspace = true
 clap.workspace = true
 tree-sitter.workspace = true
-thiserror.workspace = true
+color-eyre.workspace = true
 comrak.workspace = true
 serde.workspace = true
 serde_json.workspace = true

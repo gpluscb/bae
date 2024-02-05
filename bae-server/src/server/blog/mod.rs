@@ -29,26 +29,42 @@ pub async fn test(
     State(comrak_options): State<Arc<comrak::Options>>,
     State(highlighter): State<Arc<StandardCodeBlockHighlighter>>,
 ) -> Result<Html<String>> {
-    let markdown = format!(
-        r#"Hi **bold** _italic_
+    let markdown = r#"Hi **bold** _italic_
 
 | Table | Yeah |
 | ----- | ---- |
 | Thing | Woo  |
-| Line  | No 2 |
+| Row   | No 2 |
+
+And have some code!!
 
 ```rs
-fn number_example() {{
-    // Also a nice comment example
-    let i = 20;
-}}
+// This is just some code I copied from wherever in my project
+pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
+    tag: &Tag,
+    executor: E,
+) -> Result<Vec<BlogPost>> {
+    query_as!(
+        BlogPostRecord,
+        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
+            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        FROM blog_post NATURAL JOIN tag \
+        WHERE publication_date IS NOT NULL \
+            AND publication_date <= now() \
+        GROUP BY url \
+        HAVING bool_or(tag=$1) \
+        ORDER BY publication_date DESC",
+        tag.0,
+    )
+    .fetch(executor)
+    .map_err(Error::from)
+    .map(|result| result.and_then(BlogPost::try_from))
+    .try_collect()
+    .await
+}
+```"#;
 
-{}
-```"#,
-        include_str!("mod.rs")
-    );
-
-    let test_md_rendered = render_md_to_html(&markdown, &comrak_options, &highlighter);
+    let test_md_rendered = render_md_to_html(markdown, &comrak_options, &highlighter);
     let html = TestTemplate { test_md_rendered }.render()?;
 
     Ok(Html(html))

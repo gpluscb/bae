@@ -48,4 +48,5 @@
 
 .code-block {
     overflow: auto;
+    @apply -mx-52 bg-purple-100 rounded-xl p-2
 }

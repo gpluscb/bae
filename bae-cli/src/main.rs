@@ -136,8 +136,9 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Resul
     }
 
     let front_matter_str = take_front_matter(root).ok_or_eyre("No front matter in markdown")?;
+    let front_matter_trimmed = front_matter_str.trim().trim_matches('-');
 
-    let front_matter: FrontMatter = serde_json::from_str(&front_matter_str)
+    let front_matter: FrontMatter = serde_json::from_str(front_matter_trimmed)
         .wrap_err("Front matter was not the correct json format")?;
 
     let partial_post = PartialBlogPost {

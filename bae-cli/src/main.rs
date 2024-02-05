@@ -37,7 +37,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> color_eyre::Result<()> {
     _ = dotenv::dotenv();
 
     tracing_subscriber::registry()
@@ -55,30 +55,32 @@ async fn main() {
         Command::GenerateHighlightCss {
             input_theme,
             output_file,
-        } => generate_highlight_css(&input_theme, &output_file)
-            .expect("Could not generate highlight css"),
+        } => generate_highlight_css(&input_theme, &output_file),
         Command::UploadBlogPost {
             md_file,
             new_author,
-        } => upload_blog_post(&md_file, new_author)
-            .await
-            .expect("Could not upload blog post"),
+        } => upload_blog_post(&md_file, new_author).await,
     }
 }
 
-fn generate_highlight_css(input_theme: &Path, output_file: &Path) -> std::io::Result<()> {
-    let theme: Theme = serde_json::from_reader(File::open(input_theme)?)?;
+fn generate_highlight_css(input_theme: &Path, output_file: &Path) -> color_eyre::Result<()> {
+    let theme: Theme =
+        serde_json::from_reader(File::open(input_theme).wrap_err("Opening input file failed")?)
+            .wrap_err("Deserializing json to theme failed")?;
 
     let mut output_file = File::options()
         .write(true)
         .truncate(true)
         .create(true)
-        .open(output_file)?;
+        .open(output_file)
+        .wrap_err("Opening output file failed")?;
 
-    theme.write_css_with_class_names(
-        &mut output_file,
-        &StandardClassNameGenerator::standard_generator(),
-    )?;
+    theme
+        .write_css_with_class_names(
+            &mut output_file,
+            &StandardClassNameGenerator::standard_generator(),
+        )
+        .wrap_err("Writing css failed")?;
 
     Ok(())
 }
@@ -110,12 +112,15 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Resul
             .footnotes(true)
             .multiline_block_quotes(true)
             .build()
-            .expect("Building ExtensionOptions failed"),
-        parse: ParseOptionsBuilder::default().smart(true).build().unwrap(),
+            .wrap_err("Building ExtensionOptions failed")?,
+        parse: ParseOptionsBuilder::default()
+            .smart(true)
+            .build()
+            .wrap_err("Building ParseOptions failed")?,
         render: RenderOptionsBuilder::default()
             .unsafe_(true)
             .build()
-            .expect("Building RenderOptions failed"),
+            .wrap_err("Building RenderOptions failed")?,
     };
 
     let arena = Arena::new();

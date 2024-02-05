@@ -86,11 +86,11 @@ pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, \
-        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
-         FROM blog_post NATURAL LEFT JOIN tag \
-         WHERE url=$1 \
-         GROUP BY url",
+        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
+            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        FROM blog_post NATURAL LEFT JOIN tag \
+        WHERE url=$1 \
+        GROUP BY url",
         url
     )
     .fetch_optional(executor)
@@ -105,13 +105,13 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
 ) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, \
-        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
-         FROM blog_post NATURAL LEFT JOIN tag \
-         WHERE url=$1 AND (accessible OR \
+        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
+            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        FROM blog_post NATURAL LEFT JOIN tag \
+        WHERE url=$1 AND (accessible OR \
             (publication_date IS NOT NULL \
             AND publication_date <= now())) \
-         GROUP BY url",
+        GROUP BY url",
         url
     )
     .fetch_optional(executor)
@@ -123,8 +123,8 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
 pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, \
-        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
+            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
         GROUP BY url \
         ORDER BY publication_date DESC"
@@ -139,8 +139,8 @@ pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Ve
 pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, \
-        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
+            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
         WHERE publication_date IS NOT NULL \
             AND publication_date <= now() \
@@ -160,8 +160,8 @@ pub async fn get_public_blog_posts_for_author<'c, E: PgExecutor<'c>>(
 ) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, \
-        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
+            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL JOIN tag \
         WHERE publication_date IS NOT NULL \
             AND publication_date <= now() \
@@ -183,8 +183,8 @@ pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
 ) -> Result<Vec<BlogPost>> {
     query_as!(
         BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, \
-        reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
+            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL JOIN tag \
         WHERE publication_date IS NOT NULL \
             AND publication_date <= now() \
@@ -242,7 +242,8 @@ pub async fn insert_blog_post<'c>(
 
     // Insert blog post
     query!(
-        "INSERT INTO blog_post (url, title, description, author, markdown, html, reading_time_minutes, accessible, publication_date) \
+        "INSERT INTO blog_post \
+            (url, title, description, author, markdown, html, reading_time_minutes, accessible, publication_date) \
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         url,
         title,

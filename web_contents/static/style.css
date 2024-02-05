@@ -722,6 +722,12 @@ h6{
 
 .code-block {
   overflow: auto;
+  margin-left: -13rem;
+  margin-right: -13rem;
+  border-radius: 0.75rem;
+  --tw-bg-opacity: 1;
+  background-color: rgb(243 232 255 / var(--tw-bg-opacity));
+  padding: 0.5rem
 }
 
 .hover\:bg-purple-700:hover{

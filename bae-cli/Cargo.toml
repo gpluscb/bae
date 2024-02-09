@@ -9,6 +9,8 @@ edition = "2021"
 bae-common = { path = "../bae-common" }
 dotenv.workspace = true
 clap.workspace = true
+similar.workspace = true
+console.workspace = true
 tree-sitter.workspace = true
 color-eyre.workspace = true
 comrak.workspace = true

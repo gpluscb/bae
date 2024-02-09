@@ -1,16 +1,18 @@
-use bae_common::blog::{MdOrHtml, PartialBlogPost};
+use bae_common::blog::{BlogPost, MdOrHtml, PartialBlogPost};
 use bae_common::database;
 use bae_common::database::{Author, Tag};
 use bae_common::highlighting::Theme;
 use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use chrono::{DateTime, Utc};
 use clap::{Parser, Subcommand};
-use color_eyre::eyre::{OptionExt, WrapErr};
+use color_eyre::eyre::{eyre, OptionExt, WrapErr};
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::{Arena, ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
+use similar::{ChangeTag, TextDiff};
 use sqlx::PgPool;
 use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -26,6 +28,14 @@ enum Command {
     UploadBlogPost {
         #[arg(short, long)]
         md_file: PathBuf,
+        #[arg(long)]
+        new_author: bool,
+    },
+    UpdateBlogPost {
+        #[arg(short, long)]
+        md_file: PathBuf,
+        #[arg(short, long)]
+        original_url: Option<String>,
         #[arg(long)]
         new_author: bool,
     },
@@ -61,6 +71,11 @@ async fn main() -> color_eyre::Result<()> {
             md_file,
             new_author,
         } => upload_blog_post(&md_file, new_author).await,
+        Command::UpdateBlogPost {
+            md_file,
+            original_url,
+            new_author,
+        } => update_blog_post(&md_file, original_url.as_deref(), new_author).await,
     }
 }
 
@@ -97,11 +112,9 @@ struct FrontMatter {
     pub publication_date: Option<DateTime<Utc>>,
 }
 
-async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Result<()> {
-    let markdown = std::fs::read_to_string(md_file)?;
-
+fn comrak_options() -> color_eyre::Result<comrak::Options> {
     // TODO: very duped, server shouldn't need comrak anyway in the future
-    let options = comrak::Options {
+    Ok(comrak::Options {
         extension: ExtensionOptionsBuilder::default()
             .front_matter_delimiter(Some("---".to_string()))
             .strikethrough(true)
@@ -122,25 +135,103 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Resul
             .unsafe_(true)
             .build()
             .wrap_err("Building RenderOptions failed")?,
-    };
+    })
+}
 
-    let arena = Arena::new();
+fn prompt(prompt: &str) -> std::io::Result<bool> {
+    let mut user_input = String::new();
+    loop {
+        let mut stdout = std::io::stdout().lock();
+        stdout.write_all(prompt.as_bytes())?;
+        stdout.write_all(b" [Y/N]")?;
+        stdout.flush()?;
+        drop(stdout);
 
-    let root = comrak::parse_document(&arena, &markdown, &options);
+        std::io::stdin().read_line(&mut user_input)?;
+        user_input.make_ascii_lowercase();
 
-    fn take_front_matter<'a: 'b, 'b>(node: &'a AstNode<'b>) -> Option<String> {
-        if let NodeValue::FrontMatter(front_matter) = &mut node.data.borrow_mut().value {
-            Some(std::mem::take(front_matter))
-        } else {
-            node.children().find_map(take_front_matter)
+        match user_input.trim() {
+            "y" | "yes" => return Ok(true),
+            "n" | "no" => return Ok(false),
+            _ => (),
+        }
+
+        user_input.clear();
+    }
+}
+
+fn print_diff(old: &str, new: &str) {
+    // https://github.com/mitsuhiko/similar/blob/main/examples/terminal-inline.rs
+    struct Line(Option<usize>);
+
+    impl std::fmt::Display for Line {
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            match self.0 {
+                None => write!(f, "    "),
+                Some(idx) => write!(f, "{:<4}", idx + 1),
+            }
         }
     }
 
-    let front_matter_str = take_front_matter(root).ok_or_eyre("No front matter in markdown")?;
+    let diff = TextDiff::from_lines(old, new);
+
+    for (idx, group) in diff.grouped_ops(3).iter().enumerate() {
+        if idx > 0 {
+            println!("{:-^1$}", "-", 80);
+        }
+        for op in group {
+            for change in diff.iter_inline_changes(op) {
+                let (sign, s) = match change.tag() {
+                    ChangeTag::Delete => ("-", console::Style::new().red()),
+                    ChangeTag::Insert => ("+", console::Style::new().green()),
+                    ChangeTag::Equal => (" ", console::Style::new().dim()),
+                };
+                print!(
+                    "{}{} |{}",
+                    console::style(Line(change.old_index())).dim(),
+                    console::style(Line(change.new_index())).dim(),
+                    s.apply_to(sign).bold(),
+                );
+                for (emphasized, value) in change.iter_strings_lossy() {
+                    if emphasized {
+                        print!("{}", s.apply_to(value).underlined().on_black());
+                    } else {
+                        print!("{}", s.apply_to(value));
+                    }
+                }
+                if change.missing_newline() {
+                    println!();
+                }
+            }
+        }
+    }
+}
+
+fn extract_front_matter(md: &str, options: &comrak::Options) -> color_eyre::Result<FrontMatter> {
+    let arena = Arena::new();
+
+    let root = comrak::parse_document(&arena, &md, &options);
+
+    fn take_front_matter_string<'a: 'b, 'b>(node: &'a AstNode<'b>) -> Option<String> {
+        if let NodeValue::FrontMatter(front_matter) = &mut node.data.borrow_mut().value {
+            Some(std::mem::take(front_matter))
+        } else {
+            node.children().find_map(take_front_matter_string)
+        }
+    }
+
+    let front_matter_str =
+        take_front_matter_string(root).ok_or_eyre("No front matter in markdown")?;
     let front_matter_trimmed = front_matter_str.trim().trim_matches('-');
 
-    let front_matter: FrontMatter = serde_json::from_str(front_matter_trimmed)
-        .wrap_err("Front matter was not the correct json format")?;
+    serde_json::from_str(front_matter_trimmed)
+        .wrap_err("Front matter was not the correct json format")
+}
+
+fn full_blog_post_from_md(markdown: String) -> color_eyre::Result<BlogPost> {
+    let options = comrak_options()?;
+
+    let front_matter = extract_front_matter(&markdown, &options)?;
 
     let partial_post = PartialBlogPost {
         url: front_matter.url,
@@ -153,16 +244,27 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Resul
         publication_date: front_matter.publication_date,
     };
 
-    let full_post = partial_post.generate_blog_post(
+    Ok(partial_post.generate_blog_post(
         &options,
         &CodeBlockHighlighter::standard_config()
             .wrap_err("Getting standard CodeBlockHighlighter config failed")?,
-    );
+    ))
+}
 
+async fn connect_database() -> color_eyre::Result<PgPool> {
     let database_url = std::env::var("DATABASE_URL").wrap_err("DATABASE_URL env var error")?;
-    let database = PgPool::connect(&database_url)
+
+    PgPool::connect(&database_url)
         .await
-        .wrap_err("Could not connect to database")?;
+        .wrap_err("Could not connect to database")
+}
+
+async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Result<()> {
+    let markdown = std::fs::read_to_string(md_file)?;
+
+    let full_post = full_blog_post_from_md(markdown)?;
+
+    let database = connect_database().await?;
 
     let mut transaction = database.begin().await?;
     database::insert_blog_post(&full_post, new_author, &mut transaction)
@@ -173,4 +275,53 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Resul
         .commit()
         .await
         .wrap_err("Inserting blog post failed")
+}
+
+async fn update_blog_post(
+    md_file: &Path,
+    original_url: Option<&str>,
+    new_author: bool,
+) -> color_eyre::Result<()> {
+    let markdown = std::fs::read_to_string(md_file)?;
+
+    let full_post = full_blog_post_from_md(markdown)?;
+
+    let database = connect_database().await?;
+
+    let old_full_post = database::get_blog_post(original_url.unwrap_or(&full_post.url), &database)
+        .await?
+        .ok_or_eyre("Post with original url not found")?;
+
+    let prompt_result = if let Some(old_full_post_md) = old_full_post.markdown {
+        println!("Markdown Diff:");
+        println!();
+        print_diff(&old_full_post_md, full_post.markdown.as_ref().unwrap());
+        println!();
+
+        prompt("Continue with update?").wrap_err("Prompting user failed")?
+    } else {
+        println!("HTML Diff:");
+        println!();
+        print_diff(&old_full_post.html, &full_post.html);
+        println!();
+
+        prompt(
+            "Previously, this was an html only post. \
+            You are now adding markdown to the post. \
+            Metadata was not compared. Continue?", // TODO: compare metadata
+        )
+        .wrap_err("Prompting user failed")?
+    };
+
+    if !prompt_result {
+        return Err(eyre!("User aborted"));
+    }
+
+    let mut transaction = database.begin().await?;
+    database::update_blog_post(original_url, &full_post, new_author, &mut transaction).await?;
+
+    transaction
+        .commit()
+        .await
+        .wrap_err("Updating blog post failed")
 }

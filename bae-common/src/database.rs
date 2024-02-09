@@ -249,6 +249,81 @@ pub async fn insert_blog_post<'c>(
     Ok(())
 }
 
+pub async fn update_blog_post<'c>(
+    original_url: Option<&str>,
+    BlogPost {
+        url,
+        title,
+        description,
+        author,
+        markdown,
+        html,
+        tags,
+        reading_time,
+        accessible,
+        publication_date,
+    }: &BlogPost,
+    new_author: bool,
+    transaction: &mut Transaction<'c, Postgres>,
+) -> Result<()> {
+    let original_url = original_url.unwrap_or(url);
+
+    // Insert author (if new)
+    if new_author {
+        query!(
+            "INSERT INTO author (author) \
+            VALUES ($1)",
+            author.0,
+        )
+        .execute(&mut **transaction)
+        .await?;
+    }
+
+    // Remove old tags
+    query!(
+        "DELETE FROM tag \
+        WHERE tag = ANY($1) AND url = $2",
+        &tags.iter().map(|Tag(tag)| tag.clone()).collect::<Vec<_>>(),
+        original_url,
+    )
+    .execute(&mut **transaction)
+    .await?;
+
+    // Update blog post
+    query!(
+        "UPDATE blog_post \
+        SET url=$1, title=$2, description=$3, author=$4, markdown=$5, html=$6, \
+            reading_time_minutes=$7, accessible=$8, publication_date=$9 \
+        WHERE url = $10",
+        url,
+        title,
+        description,
+        author.0,
+        markdown.as_ref(),
+        html,
+        i32::try_from(reading_time.num_minutes()).map_err(|_| Error::InvalidInput)?,
+        accessible,
+        publication_date.as_ref(),
+        original_url,
+    )
+    .execute(&mut **transaction)
+    .await?;
+
+    // Insert tags
+    for Tag(tag) in tags {
+        query!(
+            "INSERT INTO tag (tag, url) \
+            VALUES ($1, $2)",
+            tag,
+            url,
+        )
+        .execute(&mut **transaction)
+        .await?;
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::blog::BlogPost;

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE blog_post SET url=$1, title=$2, description=$3, author=$4, markdown=$5, html=$6, reading_time_minutes=$7, accessible=$8, publication_date=$9 WHERE url = $10",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4",
+        "Bool",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c6a00474680e6c22b15a0fc0998fc3f5889f38da993aa8adaff85da192bce32b"
+}

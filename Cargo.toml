@@ -28,3 +28,5 @@ color-eyre = "0.6"
 itertools = "0.12"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.4", features = ["derive"] }
+similar = { version = "2.4", features = ["inline"] }
+console = "0.15"

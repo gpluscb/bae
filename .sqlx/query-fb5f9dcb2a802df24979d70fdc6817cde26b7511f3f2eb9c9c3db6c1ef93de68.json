@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM tag WHERE tag = ANY($1) AND url = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fb5f9dcb2a802df24979d70fdc6817cde26b7511f3f2eb9c9c3db6c1ef93de68"
+}

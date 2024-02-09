@@ -1,3 +1,6 @@
+mod cli_io;
+mod diff;
+
 use bae_common::blog::{BlogPost, MdOrHtml, PartialBlogPost};
 use bae_common::database;
 use bae_common::database::{Author, Tag};
@@ -9,7 +12,6 @@ use color_eyre::eyre::{eyre, OptionExt, WrapErr};
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::{Arena, ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
-use similar::{ChangeTag, TextDiff};
 use sqlx::PgPool;
 use std::fs::File;
 use std::io::Write;
@@ -138,75 +140,6 @@ fn comrak_options() -> color_eyre::Result<comrak::Options> {
     })
 }
 
-fn prompt(prompt: &str) -> std::io::Result<bool> {
-    let mut user_input = String::new();
-    loop {
-        let mut stdout = std::io::stdout().lock();
-        stdout.write_all(prompt.as_bytes())?;
-        stdout.write_all(b" [Y/N]")?;
-        stdout.flush()?;
-        drop(stdout);
-
-        std::io::stdin().read_line(&mut user_input)?;
-        user_input.make_ascii_lowercase();
-
-        match user_input.trim() {
-            "y" | "yes" => return Ok(true),
-            "n" | "no" => return Ok(false),
-            _ => (),
-        }
-
-        user_input.clear();
-    }
-}
-
-fn print_diff(old: &str, new: &str) {
-    // https://github.com/mitsuhiko/similar/blob/main/examples/terminal-inline.rs
-    struct Line(Option<usize>);
-
-    impl std::fmt::Display for Line {
-        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            match self.0 {
-                None => write!(f, "    "),
-                Some(idx) => write!(f, "{:<4}", idx + 1),
-            }
-        }
-    }
-
-    let diff = TextDiff::from_lines(old, new);
-
-    for (idx, group) in diff.grouped_ops(3).iter().enumerate() {
-        if idx > 0 {
-            println!("{:-^1$}", "-", 80);
-        }
-        for op in group {
-            for change in diff.iter_inline_changes(op) {
-                let (sign, s) = match change.tag() {
-                    ChangeTag::Delete => ("-", console::Style::new().red()),
-                    ChangeTag::Insert => ("+", console::Style::new().green()),
-                    ChangeTag::Equal => (" ", console::Style::new().dim()),
-                };
-                print!(
-                    "{}{} |{}",
-                    console::style(Line(change.old_index())).dim(),
-                    console::style(Line(change.new_index())).dim(),
-                    s.apply_to(sign).bold(),
-                );
-                for (emphasized, value) in change.iter_strings_lossy() {
-                    if emphasized {
-                        print!("{}", s.apply_to(value).underlined().on_black());
-                    } else {
-                        print!("{}", s.apply_to(value));
-                    }
-                }
-                if change.missing_newline() {
-                    println!();
-                }
-            }
-        }
-    }
-}
-
 fn extract_front_matter(md: &str, options: &comrak::Options) -> color_eyre::Result<FrontMatter> {
     let arena = Arena::new();
 
@@ -295,17 +228,17 @@ async fn update_blog_post(
     let prompt_result = if let Some(old_full_post_md) = old_full_post.markdown {
         println!("Markdown Diff:");
         println!();
-        print_diff(&old_full_post_md, full_post.markdown.as_ref().unwrap());
+        diff::print_diff(&old_full_post_md, full_post.markdown.as_ref().unwrap());
         println!();
 
-        prompt("Continue with update?").wrap_err("Prompting user failed")?
+        cli_io::prompt("Continue with update?").wrap_err("Prompting user failed")?
     } else {
         println!("HTML Diff:");
         println!();
-        print_diff(&old_full_post.html, &full_post.html);
+        diff::print_diff(&old_full_post.html, &full_post.html);
         println!();
 
-        prompt(
+        cli_io::prompt(
             "Previously, this was an html only post. \
             You are now adding markdown to the post. \
             Metadata was not compared. Continue?", // TODO: compare metadata

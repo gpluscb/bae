@@ -2,7 +2,7 @@ use std::io::Write;
 
 pub fn prompt(prompt: &str) -> std::io::Result<bool> {
     let mut user_input = String::new();
-    loop {
+    Ok(loop {
         let mut stdout = std::io::stdout().lock();
         stdout.write_all(prompt.as_bytes())?;
         stdout.write_all(b" [Y/N]")?;
@@ -13,11 +13,11 @@ pub fn prompt(prompt: &str) -> std::io::Result<bool> {
         user_input.make_ascii_lowercase();
 
         match user_input.trim() {
-            "y" | "yes" => return Ok(true),
-            "n" | "no" => return Ok(false),
+            "y" | "yes" => break true,
+            "n" | "no" => break false,
             _ => (),
         }
 
         user_input.clear();
-    }
+    })
 }

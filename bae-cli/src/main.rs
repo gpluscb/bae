@@ -219,9 +219,10 @@ async fn update_blog_post(
 
     let database = connect_database().await?;
 
-    let old_full_post = database::get_blog_post(original_url.unwrap_or(&full_post.url), &database)
-        .await?
-        .ok_or_eyre("Post with original url not found")?;
+    let old_full_post =
+        database::get_blog_post(original_url.unwrap_or(&full_post.url), false, &database)
+            .await?
+            .ok_or_eyre("Post with original url not found")?;
 
     let prompt_result = if let Some(old_full_post_md) = old_full_post.markdown {
         println!("Markdown Diff:");

@@ -48,7 +48,7 @@ pub async fn blog_post(
     BlogPostPath { post_url }: BlogPostPath,
     State(database): State<PgPool>,
 ) -> Result<Html<String>> {
-    let blog_post = database::get_accessible_blog_post(&post_url, &database)
+    let blog_post = database::get_blog_post(&post_url, true, &database)
         .await?
         .ok_or(Error::NotFound)?;
 

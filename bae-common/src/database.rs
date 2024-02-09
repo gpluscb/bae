@@ -102,37 +102,22 @@ where
 
 pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
     url: &str,
+    accessible_only: bool,
     executor: E,
 ) -> Result<Option<BlogPost>> {
-    query_as!(
-        BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
-            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
-        FROM blog_post NATURAL LEFT JOIN tag \
-        WHERE url=$1 \
-        GROUP BY url",
-        url
-    )
-    .fetch_optional(executor)
-    .await?
-    .map(BlogPost::try_from)
-    .transpose()
-}
+    let no_accessible_filtering = !accessible_only;
 
-pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
-    url: &str,
-    executor: E,
-) -> Result<Option<BlogPost>> {
     query_as!(
         BlogPostRecord,
         "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
             accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
-        WHERE url=$1 AND (accessible OR \
+        WHERE url=$1 AND ($2 OR (accessible OR \
             (publication_date IS NOT NULL \
-            AND publication_date <= now())) \
+            AND publication_date <= now()))) \
         GROUP BY url",
-        url
+        url,
+        no_accessible_filtering,
     )
     .fetch_optional(executor)
     .await?
@@ -350,7 +335,7 @@ mod tests {
     pub async fn blog_post_tests(pool: PgPool) -> super::Result<()> {
         // Test if all the data looks alright
 
-        let public_post = super::get_blog_post("public", &pool)
+        let public_post = super::get_blog_post("public", false, &pool)
             .await?
             .expect("blog post 'public' not found");
 
@@ -369,7 +354,7 @@ mod tests {
         assert_eq!(public_post, expected_public_post);
         assert!(public_post.publication_date.unwrap() < Utc::now());
 
-        let accessible_post = super::get_blog_post("accessible", &pool)
+        let accessible_post = super::get_blog_post("accessible", false, &pool)
             .await?
             .expect("blog post 'accessible' not found");
 
@@ -387,7 +372,7 @@ mod tests {
         };
         assert_eq!(accessible_post, expected_accessible_post);
 
-        let inaccessible_post = super::get_blog_post("not_accessible", &pool)
+        let inaccessible_post = super::get_blog_post("not_accessible", false, &pool)
             .await?
             .expect("blog post 'not_accessible' not found");
 
@@ -405,7 +390,7 @@ mod tests {
         };
         assert_eq!(inaccessible_post, expected_inaccessible_post);
 
-        let future_public_post = super::get_blog_post("public_in_future", &pool)
+        let future_public_post = super::get_blog_post("public_in_future", false, &pool)
             .await?
             .expect("blog post 'public_in_future' not found");
 
@@ -427,7 +412,7 @@ mod tests {
         assert!(future_public_post.publication_date.unwrap() > Utc::now());
 
         let accessible_future_public_post =
-            super::get_blog_post("accessible_public_in_future", &pool)
+            super::get_blog_post("accessible_public_in_future", false, &pool)
                 .await?
                 .expect("blog post 'accessible_public_in_future' not found");
 
@@ -450,7 +435,7 @@ mod tests {
         // I know technically we could hang, but sql date should be 100 years in the future
         assert!(accessible_future_public_post.publication_date.unwrap() > Utc::now());
 
-        let long_post = super::get_blog_post("long_post", &pool)
+        let long_post = super::get_blog_post("long_post", false, &pool)
             .await?
             .expect("blog post 'long_post' not found");
 
@@ -477,38 +462,35 @@ mod tests {
                 < accessible_future_public_post.publication_date.unwrap()
         );
 
-        // Test if the function get_accessible_blog_post correctly filters out inaccessible ones
+        // Test if the function get_blog_post with accessible_only correctly filters out
+        // inaccessible posts
 
         assert_eq!(
-            super::get_accessible_blog_post(&public_post.url, &pool)
+            super::get_blog_post(&public_post.url, true, &pool)
                 .await?
                 .unwrap(),
             expected_public_post,
         );
         assert_eq!(
-            super::get_accessible_blog_post(&accessible_post.url, &pool)
+            super::get_blog_post(&accessible_post.url, true, &pool)
                 .await?
                 .unwrap(),
             expected_accessible_post,
         );
-        assert!(
-            super::get_accessible_blog_post(&inaccessible_post.url, &pool)
-                .await?
-                .is_none()
-        );
-        assert!(
-            super::get_accessible_blog_post(&future_public_post.url, &pool)
-                .await?
-                .is_none()
-        );
+        assert!(super::get_blog_post(&inaccessible_post.url, true, &pool)
+            .await?
+            .is_none());
+        assert!(super::get_blog_post(&future_public_post.url, true, &pool)
+            .await?
+            .is_none());
         assert_eq!(
-            super::get_accessible_blog_post(&accessible_future_public_post.url, &pool)
+            super::get_blog_post(&accessible_future_public_post.url, true, &pool)
                 .await?
                 .unwrap(),
             expected_accessible_future_public_post,
         );
         assert_eq!(
-            super::get_accessible_blog_post(&long_post.url, &pool)
+            super::get_blog_post(&long_post.url, true, &pool)
                 .await?
                 .unwrap(),
             expected_long_post,

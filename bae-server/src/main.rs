@@ -20,9 +20,13 @@ pub type StandardCodeBlockHighlighter = CodeBlockHighlighter<StandardClassNameGe
 
 #[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
 struct Env {
+    base_uri: String,
     socket_address: String,
     database_url: String,
 }
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+pub struct BaseUri(pub String);
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
@@ -30,6 +34,7 @@ pub struct AppState {
     highlighter: Arc<StandardCodeBlockHighlighter>,
     comrak_options: Arc<comrak::Options>,
     light_highlight_theme: Theme,
+    base_uri: BaseUri,
 }
 
 #[tokio::main]
@@ -89,6 +94,7 @@ async fn main() {
         highlighter,
         comrak_options,
         light_highlight_theme,
+        base_uri: BaseUri(env.base_uri),
     };
 
     let tracing_layer = TraceLayer::new_for_http();

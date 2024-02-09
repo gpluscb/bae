@@ -3,7 +3,7 @@ pub mod templates;
 use crate::model::ServerPathExt;
 use crate::server::util::Xml;
 use crate::server::{Error, Result};
-use crate::{AppState, StandardCodeBlockHighlighter};
+use crate::{AppState, BaseUri, StandardCodeBlockHighlighter};
 use askama::Template;
 use axum::extract::Request;
 use axum::extract::State;
@@ -148,9 +148,9 @@ pub async fn rss(
     RssPath {}: RssPath,
     Query(params): Query<RssQueryParams>,
     State(database): State<PgPool>,
+    State(BaseUri(base_uri)): State<BaseUri>,
     request: Request,
 ) -> Result<Xml<String>> {
-    let uri_base = "http://localhost:8080"; // TODO
     let current_path = request.uri().path();
 
     let tags = (!params.tags.is_empty()).then_some(params.tags);
@@ -163,7 +163,7 @@ pub async fn rss(
 
     channel
         .title("Bae")
-        .link(format!("{uri_base}{}", HomePath {}))
+        .link(format!("{base_uri}{}", HomePath {}))
         .description("The RSS feed for the blog part of bae (blog and eh).")
         .language("en-gb".to_string())
         .managing_editor("marrueeee@gmail.com".to_string())
@@ -177,14 +177,14 @@ pub async fn rss(
         .image(None); // TODO
 
     for blog_post in blog_posts {
-        let full_url = format!("{uri_base}{}", blog_post.full_path());
+        let full_url = format!("{base_uri}{}", blog_post.full_path());
 
         let categories = blog_post
             .tags
             .into_iter()
             .map(|tag| {
                 CategoryBuilder::default()
-                    .domain(format!("{uri_base}{}", tag.full_path()))
+                    .domain(format!("{base_uri}{}", tag.full_path()))
                     .name(tag.0)
                     .build()
             })
@@ -201,7 +201,7 @@ pub async fn rss(
             .to_rfc2822();
 
         let source = SourceBuilder::default()
-            .url(format!("{uri_base}{current_path}"))
+            .url(format!("{base_uri}{current_path}"))
             .title("Bae".to_string())
             .build();
 

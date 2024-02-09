@@ -14,7 +14,6 @@ use comrak::{Arena, ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsB
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::fs::File;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -143,7 +142,7 @@ fn comrak_options() -> color_eyre::Result<comrak::Options> {
 fn extract_front_matter(md: &str, options: &comrak::Options) -> color_eyre::Result<FrontMatter> {
     let arena = Arena::new();
 
-    let root = comrak::parse_document(&arena, &md, &options);
+    let root = comrak::parse_document(&arena, md, options);
 
     fn take_front_matter_string<'a: 'b, 'b>(node: &'a AstNode<'b>) -> Option<String> {
         if let NodeValue::FrontMatter(front_matter) = &mut node.data.borrow_mut().value {

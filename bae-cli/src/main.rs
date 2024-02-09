@@ -165,7 +165,7 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Resul
         .wrap_err("Could not connect to database")?;
 
     let mut transaction = database.begin().await?;
-    database::insert_blog_post(full_post, new_author, &mut transaction)
+    database::insert_blog_post(&full_post, new_author, &mut transaction)
         .await
         .wrap_err("Inserting blog post failed before transaction commit")?;
 

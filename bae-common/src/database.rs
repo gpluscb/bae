@@ -200,7 +200,7 @@ pub async fn insert_blog_post<'c>(
         reading_time,
         accessible,
         publication_date,
-    }: BlogPost,
+    }: &BlogPost,
     new_author: bool,
     transaction: &mut Transaction<'c, Postgres>,
 ) -> Result<()> {
@@ -218,17 +218,18 @@ pub async fn insert_blog_post<'c>(
     // Insert blog post
     query!(
         "INSERT INTO blog_post \
-            (url, title, description, author, markdown, html, reading_time_minutes, accessible, publication_date) \
+            (url, title, description, author, markdown, html, reading_time_minutes, \
+                accessible, publication_date) \
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         url,
         title,
         description,
         author.0,
-        markdown,
+        markdown.as_ref(),
         html,
         i32::try_from(reading_time.num_minutes()).map_err(|_| Error::InvalidInput)?,
         accessible,
-        publication_date,
+        publication_date.as_ref(),
     )
     .execute(&mut **transaction)
     .await?;

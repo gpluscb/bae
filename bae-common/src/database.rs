@@ -1,6 +1,7 @@
-use crate::blog::{Author, BlogPost, Tag};
+use crate::blog::BlogPost;
 use chrono::{DateTime, Duration, Utc};
 use futures::{StreamExt, TryStreamExt};
+use serde::{Deserialize, Serialize};
 use sqlx::migrate::Migrate;
 use sqlx::{migrate, query, query_as, query_scalar, Acquire, PgExecutor, Postgres, Transaction};
 use std::ops::Deref;
@@ -18,11 +19,31 @@ pub enum Error {
     InvalidInput,
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, sqlx::Type, Serialize, Deserialize)]
+#[sqlx(transparent, type_name = "text")]
+pub struct Author(pub String);
+
+impl From<String> for Author {
+    fn from(author: String) -> Self {
+        Author(author)
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, sqlx::Type, Serialize, Deserialize)]
+#[sqlx(transparent, type_name = "text")]
+pub struct Tag(pub String);
+
+impl From<String> for Tag {
+    fn from(tag: String) -> Self {
+        Tag(tag)
+    }
+}
+
 struct BlogPostRecord {
     url: String,
     title: String,
     description: String,
-    author: String,
+    author: Author,
     markdown: Option<String>,
     html: String,
     tags: Option<Vec<String>>,
@@ -48,8 +69,7 @@ impl TryFrom<BlogPostRecord> for BlogPost {
             publication_date,
         }: BlogPostRecord,
     ) -> Result<Self> {
-        let tags = tags.unwrap_or(Vec::new()).into_iter().map(Tag).collect();
-        let author = Author(author);
+        let tags = tags.unwrap_or_default().into_iter().map(Tag).collect();
         let reading_time =
             Duration::try_minutes(reading_time_minutes).ok_or(Error::UnexpectedData)?;
 
@@ -120,78 +140,33 @@ pub async fn get_accessible_blog_post<'c, E: PgExecutor<'c>>(
     .transpose()
 }
 
-pub async fn get_all_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
+pub async fn get_blog_posts<'c, E: PgExecutor<'c>>(
+    authors: Option<&[Author]>,
+    tags: Option<&[Tag]>,
+    published_only: bool,
+    executor: E,
+) -> Result<Vec<BlogPost>> {
+    let no_author_filtering = authors.is_none();
+    let no_tag_filtering = tags.is_none();
+    let no_public_filtering = !published_only;
+
     query_as!(
         BlogPostRecord,
         "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
             accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
+        WHERE \
+            ($1 OR author = ANY($2)) \
+            AND ($3 OR (publication_date IS NOT NULL \
+                AND publication_date <= now())) \
         GROUP BY url \
-        ORDER BY publication_date DESC"
-    )
-    .fetch(executor)
-    .map_err(Error::from)
-    .map(|result| result.and_then(BlogPost::try_from))
-    .try_collect()
-    .await
-}
-
-pub async fn get_public_blog_posts<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<BlogPost>> {
-    query_as!(
-        BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
-            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
-        FROM blog_post NATURAL LEFT JOIN tag \
-        WHERE publication_date IS NOT NULL \
-            AND publication_date <= now() \
-        GROUP BY url \
-        ORDER BY publication_date DESC"
-    )
-    .fetch(executor)
-    .map_err(Error::from)
-    .map(|result| result.and_then(BlogPost::try_from))
-    .try_collect()
-    .await
-}
-
-pub async fn get_public_blog_posts_for_author<'c, E: PgExecutor<'c>>(
-    author: &Author,
-    executor: E,
-) -> Result<Vec<BlogPost>> {
-    query_as!(
-        BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
-            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
-        FROM blog_post NATURAL JOIN tag \
-        WHERE publication_date IS NOT NULL \
-            AND publication_date <= now() \
-            AND author=$1 \
-        GROUP BY url \
+        HAVING $4 OR bool_or(tag = ANY($5)) \
         ORDER BY publication_date DESC",
-        author.0,
-    )
-    .fetch(executor)
-    .map_err(Error::from)
-    .map(|result| result.and_then(BlogPost::try_from))
-    .try_collect()
-    .await
-}
-
-pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
-    tag: &Tag,
-    executor: E,
-) -> Result<Vec<BlogPost>> {
-    query_as!(
-        BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
-            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
-        FROM blog_post NATURAL JOIN tag \
-        WHERE publication_date IS NOT NULL \
-            AND publication_date <= now() \
-        GROUP BY url \
-        HAVING bool_or(tag=$1) \
-        ORDER BY publication_date DESC",
-        tag.0,
+        no_author_filtering,
+        &authors.unwrap_or_default() as &[Author],
+        no_public_filtering,
+        no_tag_filtering,
+        &tags.unwrap_or_default() as &[Tag],
     )
     .fetch(executor)
     .map_err(Error::from)
@@ -275,7 +250,8 @@ pub async fn insert_blog_post<'c>(
 
 #[cfg(test)]
 mod tests {
-    use crate::blog::{Author, BlogPost};
+    use crate::blog::BlogPost;
+    use crate::database::Author;
     use chrono::Duration;
     use sqlx::types::chrono::Utc;
     use sqlx::PgPool;
@@ -462,9 +438,9 @@ mod tests {
             expected_long_post,
         );
 
-        // Test get_all_blog_posts, in particular order
+        // Test get_blog_posts for all blog posts, in particular order
 
-        let all_blog_posts = super::get_all_blog_posts(&pool).await?;
+        let all_blog_posts = super::get_blog_posts(None, None, false, &pool).await?;
         assert!([
             &expected_public_post,
             &expected_accessible_post,
@@ -495,9 +471,9 @@ mod tests {
             }
         }));
 
-        // Test get_public_blog_posts, in particular order
+        // Test get_blog_posts for public blog posts, in particular order
 
-        let public_blog_posts = super::get_public_blog_posts(&pool).await?;
+        let public_blog_posts = super::get_blog_posts(None, None, true, &pool).await?;
         assert!([&expected_public_post, &expected_long_post]
             .into_iter()
             .all(|post| public_blog_posts.contains(post)));

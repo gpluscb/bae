@@ -1,5 +1,6 @@
-use bae_common::blog::{Author, MdOrHtml, PartialBlogPost, Tag};
+use bae_common::blog::{MdOrHtml, PartialBlogPost};
 use bae_common::database;
+use bae_common::database::{Author, Tag};
 use bae_common::highlighting::Theme;
 use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use chrono::{DateTime, Utc};

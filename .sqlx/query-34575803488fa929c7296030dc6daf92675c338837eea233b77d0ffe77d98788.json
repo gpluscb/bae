@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT url, title, description, author, markdown, html, reading_time_minutes, accessible, publication_date, array_remove(array_agg(tag), NULL) as tags FROM blog_post NATURAL LEFT JOIN tag WHERE ($1 OR author = ANY($2)) AND ($3 OR (publication_date IS NOT NULL AND publication_date <= now())) GROUP BY url HAVING $4 OR bool_or(tag = ANY($5)) ORDER BY publication_date DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "markdown",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "html",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "reading_time_minutes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "accessible",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "publication_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "tags",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "TextArray",
+        "Bool",
+        "Bool",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "34575803488fa929c7296030dc6daf92675c338837eea233b77d0ffe77d98788"
+}

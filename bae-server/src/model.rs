@@ -1,6 +1,7 @@
 use crate::server::blog::{BlogPostPath, TaggedPath};
 use axum_extra::routing::TypedPath;
-use bae_common::blog::{BlogPost, Tag};
+use bae_common::blog::BlogPost;
+use bae_common::database::Tag;
 
 pub trait ServerPathExt {
     type Path: TypedPath;

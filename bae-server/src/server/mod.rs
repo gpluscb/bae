@@ -1,5 +1,6 @@
 pub mod blog;
 pub mod templates;
+pub mod util;
 
 use crate::AppState;
 use askama::Template;
@@ -28,13 +29,17 @@ pub enum Error {
     Askama(#[from] askama::Error),
     #[error("Database error: {0}")]
     Database(#[from] database::Error),
+    #[error("Database returned invalid data")]
+    InvalidDatabaseReturn,
 }
 
 impl Error {
     pub fn status(&self) -> StatusCode {
         match self {
             Error::NotFound | Error::Path(_) => StatusCode::NOT_FOUND,
-            Error::Askama(_) | Error::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::Askama(_) | Error::Database(_) | Error::InvalidDatabaseReturn => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     }
 }

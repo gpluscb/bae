@@ -6,7 +6,7 @@ resolver = "2"
 
 [workspace.dependencies]
 axum = { version = "0.7", features = ["tracing", "macros"] }
-axum-extra = { version = "0.9", features = ["typed-routing"] }
+axum-extra = { version = "0.9", features = ["typed-routing", "typed-header", "query"] }
 tokio = { version = "1.35", features = ["macros", "rt-multi-thread", "signal"] }
 futures = "0.3"
 tower-http = { version = "0.5", features = ["trace", "fs"] }
@@ -17,6 +17,7 @@ comrak = { version = "0.21", default-features = false }
 tree-sitter = "0.20"
 tree-sitter-rust = "0.20"
 tree-sitter-highlight = "0.20"
+rss = "2.0"
 sqlx = { version = "0.7", features = ["postgres", "chrono", "runtime-tokio"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

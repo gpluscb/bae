@@ -1,6 +1,7 @@
 use crate::model::ServerPathExt;
 use askama::Template;
-use bae_common::blog::{BlogPost, Tag};
+use bae_common::blog::BlogPost;
+use bae_common::database::Tag;
 
 #[derive(Template)]
 #[template(path = "blog/test.html")]

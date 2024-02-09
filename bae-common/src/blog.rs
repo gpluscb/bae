@@ -1,3 +1,4 @@
+use crate::database::{Author, Tag};
 use crate::highlighting::CssClassNameGenerator;
 use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter};
 use chrono::{DateTime, Duration, Utc};
@@ -38,12 +39,6 @@ pub struct BlogPost {
     pub accessible: bool,
     pub publication_date: Option<DateTime<Utc>>,
 }
-
-#[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
-pub struct Author(pub String);
-
-#[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
-pub struct Tag(pub String);
 
 fn generate_reading_time(content: &str) -> Duration {
     Duration::minutes((content.split_whitespace().count() / AVERAGE_READING_WPM) as i64)

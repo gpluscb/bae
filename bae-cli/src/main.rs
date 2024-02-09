@@ -114,7 +114,6 @@ struct FrontMatter {
 }
 
 fn comrak_options() -> color_eyre::Result<comrak::Options> {
-    // TODO: very duped, server shouldn't need comrak anyway in the future
     Ok(comrak::Options {
         extension: ExtensionOptionsBuilder::default()
             .front_matter_delimiter(Some("---".to_string()))

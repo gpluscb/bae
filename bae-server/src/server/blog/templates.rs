@@ -4,12 +4,6 @@ use bae_common::blog::BlogPost;
 use bae_common::database::Tag;
 
 #[derive(Template)]
-#[template(path = "blog/test.html")]
-pub struct TestTemplate {
-    pub test_md_rendered: String,
-}
-
-#[derive(Template)]
 #[template(path = "blog/home.html")]
 pub struct HomeTemplate {
     pub blog_posts: Vec<BlogPost>,

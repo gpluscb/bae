@@ -3,77 +3,28 @@ pub mod templates;
 use crate::model::ServerPathExt;
 use crate::server::util::Xml;
 use crate::server::{Error, Result};
-use crate::{AppState, BaseUri, StandardCodeBlockHighlighter};
+use crate::{AppState, BaseUri};
 use askama::Template;
 use axum::extract::Request;
 use axum::extract::State;
 use axum::response::Html;
-use axum::routing::get;
 use axum::Router;
 use axum_extra::extract::Query;
 use axum_extra::routing::{RouterExt, TypedPath};
 use bae_common::database;
 use bae_common::database::{Author, Tag};
-use bae_common::markdown_render::render_md_to_html;
 use rss::{CategoryBuilder, ChannelBuilder, GuidBuilder, ItemBuilder, SourceBuilder};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::sync::Arc;
-use templates::{BlogPostTemplate, HomeTemplate, TaggedTemplate, TagsTemplate, TestTemplate};
+use templates::{BlogPostTemplate, HomeTemplate, TaggedTemplate, TagsTemplate};
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/blog/test", get(test))
         .typed_get(home)
         .typed_get(blog_post)
         .typed_get(tagged)
         .typed_get(tags)
         .typed_get(rss)
-}
-
-pub async fn test(
-    State(comrak_options): State<Arc<comrak::Options>>,
-    State(highlighter): State<Arc<StandardCodeBlockHighlighter>>,
-) -> Result<Html<String>> {
-    let markdown = r#"Hi **bold** _italic_
-
-| Table | Yeah |
-| ----- | ---- |
-| Thing | Woo  |
-| Row   | No 2 |
-
-And have some code!!
-
-```rs
-// This is just some code I copied from wherever in my project
-pub async fn get_public_blog_posts_for_tag<'c, E: PgExecutor<'c>>(
-    tag: &Tag,
-    executor: E,
-) -> Result<Vec<BlogPost>> {
-    query_as!(
-        BlogPostRecord,
-        "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
-            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
-        FROM blog_post NATURAL JOIN tag \
-        WHERE publication_date IS NOT NULL \
-            AND publication_date <= now() \
-        GROUP BY url \
-        HAVING bool_or(tag=$1) \
-        ORDER BY publication_date DESC",
-        tag.0,
-    )
-    .fetch(executor)
-    .map_err(Error::from)
-    .map(|result| result.and_then(BlogPost::try_from))
-    .try_collect()
-    .await
-}
-```"#;
-
-    let test_md_rendered = render_md_to_html(markdown, &comrak_options, &highlighter);
-    let html = TestTemplate { test_md_rendered }.render()?;
-
-    Ok(Html(html))
 }
 
 #[derive(TypedPath, Deserialize)]

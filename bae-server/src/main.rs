@@ -3,12 +3,9 @@ pub mod server;
 
 use axum::extract::FromRef;
 use bae_common::database;
-use bae_common::highlighting::Theme;
 use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
-use comrak::{ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
 use sqlx::PgPool;
-use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
@@ -31,9 +28,6 @@ pub struct BaseUri(pub String);
 #[derive(Clone, FromRef)]
 pub struct AppState {
     database: PgPool,
-    highlighter: Arc<StandardCodeBlockHighlighter>,
-    comrak_options: Arc<comrak::Options>,
-    light_highlight_theme: Theme,
     base_uri: BaseUri,
 }
 
@@ -59,41 +53,8 @@ async fn main() {
         .await
         .expect("Database migration failed");
 
-    let highlighter = Arc::new(
-        CodeBlockHighlighter::standard_config()
-            .expect("Loading CodeBlockHighlighter config failed"),
-    );
-
-    let comrak_options = Arc::new(comrak::Options {
-        extension: ExtensionOptionsBuilder::default()
-            .front_matter_delimiter(Some("---".to_string()))
-            .strikethrough(true)
-            .tagfilter(true)
-            .table(true)
-            .autolink(true)
-            .tasklist(true)
-            .superscript(true)
-            .footnotes(true)
-            .multiline_block_quotes(true)
-            .build()
-            .expect("Building ExtensionOptions failed"),
-        parse: ParseOptionsBuilder::default().smart(true).build().unwrap(),
-        render: RenderOptionsBuilder::default()
-            .unsafe_(true)
-            .build()
-            .expect("Building RenderOptions failed"),
-    });
-
-    let light_highlight_theme = serde_json::from_str(include_str!(
-        "../../web_contents/highlighting_themes/light.json"
-    ))
-    .expect("Loading light highlight theme failed");
-
     let app_state = AppState {
         database,
-        highlighter,
-        comrak_options,
-        light_highlight_theme,
         base_uri: BaseUri(env.base_uri),
     };
 

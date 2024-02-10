@@ -462,11 +462,15 @@ a:hover{
 }
 
 ul{
+  list-style-position: inside;
   list-style-type: disc;
+  padding-left: 0.25rem;
 }
 
 ol{
+  list-style-position: inside;
   list-style-type: decimal;
+  padding-left: 0.25rem;
 }
 
 h1{
@@ -680,6 +684,10 @@ h6{
   list-style-type: none;
 }
 
+.rounded-full{
+  border-radius: 9999px;
+}
+
 .rounded-xl{
   border-radius: 0.75rem;
 }
@@ -705,6 +713,11 @@ h6{
 
 .p-2{
   padding: 0.5rem;
+}
+
+.px-2{
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 .text-sm{

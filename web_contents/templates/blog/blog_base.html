@@ -1,0 +1,12 @@
+{% extends "../base.html" %}
+
+{% block body %}
+
+<nav class="bg-purple-400">
+    <div class="mx-auto max-w-prose">
+        <a href="/blog/rss.xml" class="px-2 bg-purple-200 rounded-full">RSS</a>{# TODO: use RssPath instead #}
+    </div>
+</nav>
+
+{% call super() %}
+{% endblock %}

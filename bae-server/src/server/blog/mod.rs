@@ -111,7 +111,7 @@ pub async fn rss(
     let blog_posts =
         database::get_blog_posts(authors.as_deref(), tags.as_deref(), true, &database).await?;
 
-    //Note: chrono's rfc2822 date time is RSS compatible as RSS explicitly allows quadruple digit years
+    // Note: chrono's rfc2822 date time is RSS compatible as RSS explicitly allows quadruple digit years
     let last_update = blog_posts
         .first()
         .and_then(|post| post.publication_date)

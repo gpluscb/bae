@@ -14,11 +14,11 @@
     }
 
     ul {
-        @apply list-disc;
+        @apply list-disc list-inside pl-1;
     }
 
     ol {
-        @apply list-decimal;
+        @apply list-decimal list-inside pl-1;
     }
 
     h1 {

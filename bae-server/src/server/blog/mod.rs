@@ -15,6 +15,7 @@ use bae_common::database;
 use bae_common::database::{Author, Tag};
 use rss::{CategoryBuilder, ChannelBuilder, GuidBuilder, ItemBuilder, SourceBuilder};
 use serde::{Deserialize, Serialize};
+use sqlx::types::chrono::DateTime;
 use sqlx::PgPool;
 use templates::{BlogPostTemplate, HomeTemplate, TaggedTemplate, TagsTemplate};
 
@@ -110,6 +111,13 @@ pub async fn rss(
     let blog_posts =
         database::get_blog_posts(authors.as_deref(), tags.as_deref(), true, &database).await?;
 
+    //Note: chrono's rfc2822 date time is RSS compatible as RSS explicitly allows quadruple digit years
+    let last_update = blog_posts
+        .first()
+        .and_then(|post| post.publication_date)
+        .as_ref()
+        .map(DateTime::to_rfc2822);
+
     let mut channel = ChannelBuilder::default();
 
     channel
@@ -119,7 +127,7 @@ pub async fn rss(
         .language("en-gb".to_string())
         .managing_editor("marrueeee@gmail.com".to_string())
         .webmaster("marrueeee@gmail.com".to_string())
-        .last_build_date("TODO".to_string())
+        .last_build_date(last_update)
         .category(CategoryBuilder::default().name("Programming").build())
         .category(CategoryBuilder::default().name("IT").build())
         .category(CategoryBuilder::default().name("Technology").build())

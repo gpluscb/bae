@@ -3,8 +3,8 @@
 {% block title %}{{ blog_post.title }}{% endblock %}
 
 {% block contents %}
-<article>
-    <div id="blog-post-header" class="">
+<article id="blog-post">
+    <div id="blog-post-header" class="max-w-screen-sm mx-auto">
         <h1 id="blog-post-title">{{ blog_post.title }}</h1>
         <p id="blog-post-subtitle" class="text-sm font-light">
             <span id="blog-post-author">{{ blog_post.author }}</span>
@@ -28,7 +28,7 @@
             </span>
         </p>
     </div>
-    <hr class="border-black h-0.5">
+    <hr id="blog-post-divider" class="max-w-screen-sm border-black h-0.5 mx-auto">
     <div id="blog-post-contents">
         {{ blog_post.html|safe }}
     </div>

@@ -3,8 +3,8 @@
 {% block body %}
 
 <nav class="bg-purple-400">
-    <div class="mx-auto max-w-prose">
-        <a href="/blog/rss.xml" class="px-2 bg-purple-200 rounded-full">RSS</a>{# TODO: use RssPath instead #}
+    <div class="mx-auto max-w-screen-sm">
+        <a href="{{ RssPath::default() }}" class="px-2 bg-purple-200 rounded-full">RSS</a>
     </div>
 </nav>
 

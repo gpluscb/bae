@@ -44,9 +44,16 @@
     h6 {
         @apply text-base font-thin
     }
+
+    #blog-post-contents > * {
+        @apply max-w-screen-sm mx-auto
+    }
 }
 
-.code-block {
-    overflow: auto;
-    @apply -mx-52 bg-purple-100 rounded-xl p-2
+#blog-post-contents > .code-block, #blog-post-contents > p:has(img) {
+    @apply max-w-full
+}
+
+#blog-post-contents > .code-block {
+    @apply bg-purple-100 rounded-xl p-2 overflow-auto
 }

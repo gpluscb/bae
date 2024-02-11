@@ -5,7 +5,7 @@ pub fn prompt(prompt: &str) -> std::io::Result<bool> {
     Ok(loop {
         let mut stdout = std::io::stdout().lock();
         stdout.write_all(prompt.as_bytes())?;
-        stdout.write_all(b" [Y/N]")?;
+        stdout.write_all(b" [Y/N] ")?;
         stdout.flush()?;
         drop(stdout);
 

@@ -84,7 +84,7 @@ pub async fn tags(TagsPath {}: TagsPath, State(database): State<PgPool>) -> Resu
     Ok(Html(html))
 }
 
-#[derive(Copy, Clone, TypedPath, Deserialize)]
+#[derive(Copy, Clone, Default, TypedPath, Deserialize)]
 #[typed_path("/blog/rss.xml", rejection(Error))]
 pub struct RssPath {}
 

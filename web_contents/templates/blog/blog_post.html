@@ -4,7 +4,7 @@
 
 {% block contents %}
 <article id="blog-post">
-    <div id="blog-post-header" class="max-w-screen-sm mx-auto">
+    <div id="blog-post-header" class="max-w-screen-md mx-auto">
         <h1 id="blog-post-title">{{ blog_post.title }}</h1>
         <p id="blog-post-subtitle" class="text-sm font-light">
             <span id="blog-post-author">{{ blog_post.author }}</span>
@@ -28,7 +28,7 @@
             </span>
         </p>
     </div>
-    <hr id="blog-post-divider" class="max-w-screen-sm border-black h-0.5 mx-auto">
+    <hr id="blog-post-divider" class="max-w-screen-md border-black h-0.5 mx-auto">
     <div id="blog-post-contents">
         {{ blog_post.html|safe }}
     </div>

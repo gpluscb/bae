@@ -22,38 +22,50 @@
     }
 
     h1 {
-        @apply text-4xl font-normal;
+        @apply text-4xl font-medium;
     }
 
     h2 {
-        @apply text-3xl font-light;
+        @apply text-3xl font-medium;
     }
 
     h3 {
-        @apply text-2xl font-extralight;
+        @apply text-2xl font-medium;
     }
 
     h4 {
-        @apply text-xl font-thin
+        @apply text-xl font-medium;
     }
 
     h5 {
-        @apply text-lg font-thin
+        @apply text-lg font-medium;
     }
 
     h6 {
-        @apply text-base font-thin
+        @apply text-base font-medium;
     }
 
     #blog-post-contents > * {
-        @apply max-w-screen-sm mx-auto
+        @apply max-w-screen-md mx-auto;
     }
 }
 
+#blog-post-contents > p, #blog-post-contents > .code-block {
+    @apply my-2;
+}
+
 #blog-post-contents > .code-block, #blog-post-contents > p:has(img) {
-    @apply max-w-full
+    @apply max-w-full my-5;
+}
+
+#blog-post-contents > p > img {
+    @apply rounded-md;
 }
 
 #blog-post-contents > .code-block {
-    @apply bg-purple-100 rounded-xl p-2 overflow-auto
+    @apply bg-purple-100 rounded-xl p-2 overflow-auto;
+}
+
+#blog-post-contents > blockquote {
+    @apply text-lg pl-1.5 border-l-4 border-purple-700 bg-purple-300 rounded italic;
 }

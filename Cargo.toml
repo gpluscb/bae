@@ -30,3 +30,6 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.4", features = ["derive"] }
 similar = { version = "2.4", features = ["inline"] }
 console = "0.15"
+
+[profile.dev.package.askama_derive]
+opt-level = 3

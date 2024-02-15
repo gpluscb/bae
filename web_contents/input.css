@@ -46,12 +46,8 @@
     }
 
     #blog-post-contents > * {
-        @apply max-w-screen-md mx-auto;
+        @apply max-w-screen-md mx-auto my-2;
     }
-}
-
-#blog-post-contents > * {
-    @apply my-2;
 }
 
 #blog-post-contents > p > code {

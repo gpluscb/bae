@@ -512,6 +512,8 @@ h6{
 #blog-post-contents > *{
   margin-left: auto;
   margin-right: auto;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
   max-width: 768px;
 }
 
@@ -654,6 +656,11 @@ h6{
   margin-right: auto;
 }
 
+.my-1{
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
 .mb-1{
   margin-bottom: 0.25rem;
 }
@@ -741,11 +748,6 @@ h6{
 
 .text-inherit{
   color: inherit;
-}
-
-#blog-post-contents > *{
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 #blog-post-contents > p > code{

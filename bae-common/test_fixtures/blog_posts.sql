@@ -1,7 +1,7 @@
 INSERT INTO blog_post (url, title, description, author, markdown, html,
                        reading_time_minutes, accessible, publication_date)
 VALUES ('public', 'Test (Public)', 'No description', 'Quiet', 'test *bold*', 'test <b>bold</b>',
-        1, false, now() - interval '2 years');
+        1, false, to_timestamp(0));
 
 INSERT INTO blog_post (url, title, description, author, markdown, html,
                        reading_time_minutes, accessible, publication_date)
@@ -16,12 +16,12 @@ VALUES ('not_accessible', 'Test (Not Accessible)', 'No description', 'Quiet', 't
 INSERT INTO blog_post (url, title, description, author, markdown, html,
                        reading_time_minutes, accessible, publication_date)
 VALUES ('public_in_future', 'Test (Public in future)', 'No description', 'Quiet', 'test4', 'test4',
-        1, false, now() + interval '100 years');
+        1, false, to_timestamp(10_000_000_000));
 
 INSERT INTO blog_post (url, title, description, author, markdown, html,
                        reading_time_minutes, accessible, publication_date)
 VALUES ('accessible_public_in_future', 'Test (Accessible, Public in future)', 'No description', 'Quiet', 'test5', 'test5',
-        1, true, now() + interval '101 years');
+        1, true, to_timestamp(10_000_000_001));
 
 INSERT INTO blog_post (url, title, description, author, markdown, html,
                        reading_time_minutes, accessible, publication_date)
@@ -223,4 +223,4 @@ Quis qui modi qui sed. Impedit commodi temporibus vero aliquam vero eveniet quid
 Ab incidunt minus esse dolorem. Dolor eius et suscipit quia aut voluptatem quia inventore. Et architecto natus sit fugit veritatis odit odit eum. A sint iusto praesentium doloremque.
 
 Perspiciatis voluptatem iste possimus. Blanditiis culpa similique minus est nihil odio. Non occaecati qui aliquam libero assumenda. Reiciendis cumque molestiae in.',
-        60, true, now() - interval '1 year');
+        60, true, to_timestamp(1));

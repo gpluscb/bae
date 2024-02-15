@@ -19,7 +19,9 @@ pub enum Error {
     InvalidInput,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, sqlx::Type, Serialize, Deserialize)]
+#[derive(
+    Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash, sqlx::Type, Serialize, Deserialize,
+)]
 #[sqlx(transparent, type_name = "text")]
 pub struct Author(pub String);
 
@@ -29,7 +31,9 @@ impl From<String> for Author {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, sqlx::Type, Serialize, Deserialize)]
+#[derive(
+    Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash, sqlx::Type, Serialize, Deserialize,
+)]
 #[sqlx(transparent, type_name = "text")]
 pub struct Tag(pub String);
 
@@ -321,9 +325,9 @@ pub async fn update_blog_post<'c>(
 #[cfg(test)]
 mod tests {
     use crate::blog::BlogPost;
-    use crate::database::Author;
-    use chrono::Duration;
-    use sqlx::types::chrono::Utc;
+    use crate::database::{Author, Tag};
+    use chrono::{DateTime, Duration};
+    use itertools::Itertools;
     use sqlx::PgPool;
 
     fn is_sorted<T: PartialOrd, I: Iterator<Item = T>>(iter: &mut I) -> bool {
@@ -340,185 +344,159 @@ mod tests {
         })
     }
 
-    #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts")))]
+    struct ExpectedBlogPosts {
+        public: BlogPost,
+        accessible: BlogPost,
+        not_accessible: BlogPost,
+        public_in_future: BlogPost,
+        accessible_public_in_future: BlogPost,
+        long_post: BlogPost,
+    }
+
+    impl ExpectedBlogPosts {
+        /// All the blog posts the test fixtures insert, assuming `authors`,
+        /// `blog_posts`, and `tags` fixtures are ran.
+        fn new() -> Self {
+            ExpectedBlogPosts {
+                public: BlogPost {
+                    url: "public".to_string(),
+                    title: "Test (Public)".to_string(),
+                    description: "No description".to_string(),
+                    author: Author("Quiet".to_string()),
+                    markdown: Some("test *bold*".to_string()),
+                    html: "test <b>bold</b>".to_string(),
+                    tags: vec![Tag("public".to_string()), Tag("post".to_string())],
+                    reading_time: Duration::minutes(1),
+                    accessible: false,
+                    publication_date: Some(DateTime::UNIX_EPOCH),
+                },
+                accessible: BlogPost {
+                    url: "accessible".to_string(),
+                    title: "Test (Accessible)".to_string(),
+                    description: "No description".to_string(),
+                    author: Author("Quiet".to_string()),
+                    markdown: Some("test2".to_string()),
+                    html: "test2".to_string(),
+                    tags: vec![Tag("post".to_string())],
+                    reading_time: Duration::minutes(1),
+                    accessible: true,
+                    publication_date: None,
+                },
+                not_accessible: BlogPost {
+                    url: "not_accessible".to_string(),
+                    title: "Test (Not Accessible)".to_string(),
+                    description: "No description".to_string(),
+                    author: Author("Quiet".to_string()),
+                    markdown: Some("test3".to_string()),
+                    html: "test3".to_string(),
+                    tags: vec![Tag("post".to_string())],
+                    reading_time: Duration::minutes(1),
+                    accessible: false,
+                    publication_date: None,
+                },
+                public_in_future: BlogPost {
+                    url: "public_in_future".to_string(),
+                    title: "Test (Public in future)".to_string(),
+                    description: "No description".to_string(),
+                    author: Author("Quiet".to_string()),
+                    markdown: Some("test4".to_string()),
+                    html: "test4".to_string(),
+                    tags: vec![Tag("post".to_string())],
+                    reading_time: Duration::minutes(1),
+                    accessible: false,
+                    publication_date: Some(DateTime::from_timestamp(10_000_000_000, 0).unwrap()),
+                },
+                accessible_public_in_future: BlogPost {
+                    url: "accessible_public_in_future".to_string(),
+                    title: "Test (Accessible, Public in future)".to_string(),
+                    description: "No description".to_string(),
+                    author: Author("Quiet".to_string()),
+                    markdown: Some("test5".to_string()),
+                    html: "test5".to_string(),
+                    tags: vec![Tag("post".to_string())],
+                    reading_time: Duration::minutes(1),
+                    accessible: true,
+                    publication_date: Some(DateTime::from_timestamp(10_000_000_001, 0).unwrap()),
+                },
+                long_post: BlogPost {
+                    url: "long_post".to_string(),
+                    title: "Test (Longer blog post)".to_string(),
+                    description: "No description".to_string(),
+                    author: Author("gpluscb".to_string()),
+                    markdown: Some(include_str!("../test_fixtures/lorem.txt").to_string()),
+                    html: include_str!("../test_fixtures/lorem.txt").to_string(),
+                    tags: vec![
+                        Tag("public".to_string()),
+                        Tag("lorem-ipsum".to_string()),
+                        Tag("post".to_string()),
+                    ],
+                    reading_time: Duration::minutes(60),
+                    accessible: true,
+                    publication_date: Some(DateTime::from_timestamp(1, 0).unwrap()),
+                },
+            }
+        }
+
+        /// In `blog_posts` insertion order.
+        fn all(&self) -> [&BlogPost; 6] {
+            [
+                &self.public,
+                &self.accessible,
+                &self.not_accessible,
+                &self.public_in_future,
+                &self.accessible_public_in_future,
+                &self.long_post,
+            ]
+        }
+    }
+
+    #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts", "tags")))]
     pub async fn blog_post_tests(pool: PgPool) -> super::Result<()> {
         // Test if all the data looks alright
 
-        let public_post = super::get_blog_post("public", false, &pool)
-            .await?
-            .expect("blog post 'public' not found");
+        let expected_blog_posts = ExpectedBlogPosts::new();
 
-        let expected_public_post = BlogPost {
-            url: "public".to_string(),
-            title: "Test (Public)".to_string(),
-            description: "No description".to_string(),
-            author: Author("Quiet".to_string()),
-            markdown: Some("test *bold*".to_string()),
-            html: "test <b>bold</b>".to_string(),
-            tags: vec![],
-            reading_time: Duration::minutes(1),
-            accessible: false,
-            publication_date: public_post.publication_date,
-        };
-        assert_eq!(public_post, expected_public_post);
-        assert!(public_post.publication_date.unwrap() < Utc::now());
+        for expected_blog_post in expected_blog_posts.all() {
+            let url = &expected_blog_post.url;
 
-        let accessible_post = super::get_blog_post("accessible", false, &pool)
-            .await?
-            .expect("blog post 'accessible' not found");
-
-        let expected_accessible_post = BlogPost {
-            url: "accessible".to_string(),
-            title: "Test (Accessible)".to_string(),
-            description: "No description".to_string(),
-            author: Author("Quiet".to_string()),
-            markdown: Some("test2".to_string()),
-            html: "test2".to_string(),
-            tags: vec![],
-            reading_time: Duration::minutes(1),
-            accessible: true,
-            publication_date: None,
-        };
-        assert_eq!(accessible_post, expected_accessible_post);
-
-        let inaccessible_post = super::get_blog_post("not_accessible", false, &pool)
-            .await?
-            .expect("blog post 'not_accessible' not found");
-
-        let expected_inaccessible_post = BlogPost {
-            url: "not_accessible".to_string(),
-            title: "Test (Not Accessible)".to_string(),
-            description: "No description".to_string(),
-            author: Author("Quiet".to_string()),
-            markdown: Some("test3".to_string()),
-            html: "test3".to_string(),
-            tags: vec![],
-            reading_time: Duration::minutes(1),
-            accessible: false,
-            publication_date: None,
-        };
-        assert_eq!(inaccessible_post, expected_inaccessible_post);
-
-        let future_public_post = super::get_blog_post("public_in_future", false, &pool)
-            .await?
-            .expect("blog post 'public_in_future' not found");
-
-        let expected_future_public_post = BlogPost {
-            url: "public_in_future".to_string(),
-            title: "Test (Public in future)".to_string(),
-            description: "No description".to_string(),
-            author: Author("Quiet".to_string()),
-            markdown: Some("test4".to_string()),
-            html: "test4".to_string(),
-            tags: vec![],
-            reading_time: Duration::minutes(1),
-            accessible: false,
-            publication_date: future_public_post.publication_date,
-        };
-        assert_eq!(future_public_post, expected_future_public_post);
-        // I know technically this is not safe because we could hang or whatever
-        // but the sql sets the date to 100 years in the future, so yea we should be fine
-        assert!(future_public_post.publication_date.unwrap() > Utc::now());
-
-        let accessible_future_public_post =
-            super::get_blog_post("accessible_public_in_future", false, &pool)
+            let actual_blog_post = super::get_blog_post(url, false, &pool)
                 .await?
-                .expect("blog post 'accessible_public_in_future' not found");
+                .unwrap_or_else(|| panic!("blog post '{url}' not found"));
 
-        let expected_accessible_future_public_post = BlogPost {
-            url: "accessible_public_in_future".to_string(),
-            title: "Test (Accessible, Public in future)".to_string(),
-            description: "No description".to_string(),
-            author: Author("Quiet".to_string()),
-            markdown: Some("test5".to_string()),
-            html: "test5".to_string(),
-            tags: vec![],
-            reading_time: Duration::minutes(1),
-            accessible: true,
-            publication_date: accessible_future_public_post.publication_date,
-        };
-        assert_eq!(
-            accessible_future_public_post,
-            expected_accessible_future_public_post,
-        );
-        // I know technically we could hang, but sql date should be 100 years in the future
-        assert!(accessible_future_public_post.publication_date.unwrap() > Utc::now());
-
-        let long_post = super::get_blog_post("long_post", false, &pool)
-            .await?
-            .expect("blog post 'long_post' not found");
-
-        let expected_long_post = BlogPost {
-            url: "long_post".to_string(),
-            title: "Test (Longer blog post)".to_string(),
-            description: "No description".to_string(),
-            author: Author("gpluscb".to_string()),
-            markdown: long_post.markdown.clone(),
-            html: long_post.html.clone(),
-            tags: vec![],
-            reading_time: Duration::minutes(60),
-            accessible: true,
-            publication_date: long_post.publication_date,
-        };
-        assert_eq!(long_post, expected_long_post);
-        assert!(expected_long_post.publication_date.unwrap() < Utc::now());
-        assert_eq!(expected_long_post.markdown.as_ref().unwrap().len(), 10573);
-        assert_eq!(expected_long_post.html.len(), 10573);
-
-        assert!(public_post.publication_date.unwrap() < long_post.publication_date.unwrap());
-        assert!(
-            future_public_post.publication_date.unwrap()
-                < accessible_future_public_post.publication_date.unwrap()
-        );
+            assert_eq!(&actual_blog_post, expected_blog_post);
+        }
 
         // Test if the function get_blog_post with accessible_only correctly filters out
         // inaccessible posts
 
-        assert_eq!(
-            super::get_blog_post(&public_post.url, true, &pool)
-                .await?
-                .unwrap(),
-            expected_public_post,
-        );
-        assert_eq!(
-            super::get_blog_post(&accessible_post.url, true, &pool)
-                .await?
-                .unwrap(),
-            expected_accessible_post,
-        );
-        assert!(super::get_blog_post(&inaccessible_post.url, true, &pool)
-            .await?
-            .is_none());
-        assert!(super::get_blog_post(&future_public_post.url, true, &pool)
-            .await?
-            .is_none());
-        assert_eq!(
-            super::get_blog_post(&accessible_future_public_post.url, true, &pool)
-                .await?
-                .unwrap(),
-            expected_accessible_future_public_post,
-        );
-        assert_eq!(
-            super::get_blog_post(&long_post.url, true, &pool)
-                .await?
-                .unwrap(),
-            expected_long_post,
-        );
+        for expected_blog_post in expected_blog_posts.all() {
+            if expected_blog_post.is_accessible_or_public() {
+                assert_eq!(
+                    &super::get_blog_post(&expected_blog_post.url, true, &pool)
+                        .await?
+                        .expect("Accessible blog post was not returned by get_blog_post"),
+                    expected_blog_post,
+                );
+            } else {
+                assert!(
+                    super::get_blog_post(&expected_blog_post.url, true, &pool)
+                        .await?
+                        .is_none(),
+                    "Blog post '{}' found even though it was not accessible",
+                    expected_blog_post.url,
+                )
+            }
+        }
 
         // Test get_blog_posts for all blog posts, in particular order
 
         let all_blog_posts = super::get_blog_posts(None, None, false, &pool).await?;
-        assert!([
-            &expected_public_post,
-            &expected_accessible_post,
-            &expected_inaccessible_post,
-            &expected_future_public_post,
-            &expected_accessible_future_public_post,
-            &expected_long_post
-        ]
-        .into_iter()
-        .all(|blog_post| all_blog_posts.contains(blog_post)));
-        assert_eq!(all_blog_posts.len(), 6);
+        assert!(expected_blog_posts
+            .all()
+            .into_iter()
+            .all(|blog_post| all_blog_posts.contains(blog_post)));
+
+        assert_eq!(all_blog_posts.len(), expected_blog_posts.all().len());
         assert!(is_sorted(
             &mut all_blog_posts
                 .iter()
@@ -540,22 +518,41 @@ mod tests {
 
         // Test get_blog_posts for public blog posts, in particular order
 
-        let public_blog_posts = super::get_blog_posts(None, None, true, &pool).await?;
-        assert!([&expected_public_post, &expected_long_post]
+        let expected_public_blog_posts: Vec<_> = expected_blog_posts
+            .all()
             .into_iter()
-            .all(|post| public_blog_posts.contains(post)));
-        assert_eq!(public_blog_posts.len(), 2);
-        assert!(is_sorted(
-            &mut public_blog_posts
-                .iter()
-                .map(|post| post.publication_date.unwrap())
-                .rev()
-        ));
+            .filter(|post| post.is_public())
+            .sorted_unstable_by_key(|post| post.publication_date.unwrap())
+            .rev()
+            .cloned()
+            .collect();
+
+        assert_eq!(
+            super::get_blog_posts(None, None, true, &pool).await?,
+            expected_public_blog_posts,
+        );
 
         Ok(())
     }
 
-    // TODO: Add tags tests
+    #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts", "tags")))]
+    async fn tags_test(pool: PgPool) -> super::Result<()> {
+        let expected_blog_posts = ExpectedBlogPosts::new();
+
+        let mut expected_all_tags: Vec<_> = expected_blog_posts
+            .all()
+            .into_iter()
+            .flat_map(|post| post.tags.clone())
+            .unique()
+            .collect();
+
+        expected_all_tags.sort_unstable();
+
+        assert_eq!(expected_all_tags, super::get_tags(false, &pool).await?);
+
+        Ok(())
+    }
+
     // TODO: Add authors tests
-    // TODO: Add insert tests
+    // TODO: Add insert/update tests
 }

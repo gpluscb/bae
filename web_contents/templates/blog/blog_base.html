@@ -1,12 +1,5 @@
 {% extends "../base.html" %}
 
-{% block body %}
-
-<nav class="bg-purple-400">
-    <div class="mx-auto max-w-screen-md">
-        <a href="{{ RssPath::default() }}" class="px-2 bg-purple-200 rounded-full">RSS</a>
-    </div>
-</nav>
-
-{% call super() %}
+{% block custom_nav_links %}
+<a href="{{ crate::server::blog::RssPath::default() }}" class="px-2 bg-purple-200 rounded-full ml-1">RSS</a>
 {% endblock %}

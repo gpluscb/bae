@@ -48,6 +48,10 @@
     #blog-post-contents > * {
         @apply max-w-screen-md mx-auto my-2;
     }
+
+    #inner-contents > * {
+        @apply my-2;
+    }
 }
 
 #blog-post-contents > p > code {

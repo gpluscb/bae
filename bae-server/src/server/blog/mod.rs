@@ -28,7 +28,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(rss)
 }
 
-#[derive(TypedPath, Deserialize)]
+#[derive(Default, TypedPath, Deserialize)]
 #[typed_path("/blog", rejection(Error))]
 pub struct HomePath {}
 

@@ -70,7 +70,7 @@ pub fn router() -> Router<AppState> {
         )
 }
 
-#[derive(TypedPath, Deserialize)]
+#[derive(Default, TypedPath, Deserialize)]
 #[typed_path("/", rejection(Error))]
 pub struct HomePath {}
 

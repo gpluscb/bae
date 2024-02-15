@@ -517,6 +517,11 @@ h6{
   max-width: 768px;
 }
 
+#inner-contents > *{
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 *, ::before, ::after{
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
@@ -617,6 +622,11 @@ h6{
   --tw-backdrop-sepia:  ;
 }
 
+.mx-1{
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
 .mx-auto{
   margin-left: auto;
   margin-right: auto;
@@ -633,6 +643,14 @@ h6{
 
 .mb-2{
   margin-bottom: 0.5rem;
+}
+
+.ml-1{
+  margin-left: 0.25rem;
+}
+
+.mr-1{
+  margin-right: 0.25rem;
 }
 
 .block{
@@ -701,6 +719,16 @@ h6{
 .px-2{
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+}
+
+.py-0{
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+
+.py-0\.5{
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
 }
 
 .text-sm{

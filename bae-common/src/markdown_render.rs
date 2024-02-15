@@ -102,7 +102,7 @@ impl<G: CssClassNameGenerator> CodeBlockHighlighter<G> {
 
         write!(
             output,
-            r#"<pre class="code-block"><p class="language-display">{canonical_name}</p><code>"#,
+            r#"<div class="code-block-div"><p class="language-display">{canonical_name}</p><pre class="code-block"><code class="code-block-code">"#,
         )
         .map_err(HighlighterError::from)
     }
@@ -154,7 +154,10 @@ impl<G: CssClassNameGenerator> CodeBlockHighlighter<G> {
     }
 
     pub fn write_code_block_close_html<W: Write>(output: &mut W) -> std::io::Result<()> {
-        output.write_all(br#"</code></pre>"#)
+        output.write_all(
+            br#"</code></pre></div>
+        "#,
+        )
     }
 
     pub fn write_code_block<W: Write>(

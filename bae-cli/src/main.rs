@@ -224,28 +224,19 @@ async fn update_blog_post(
             .await?
             .ok_or_eyre("Post with original url not found")?;
 
-    let prompt_result = if let Some(old_full_post_md) = old_full_post.markdown {
+    if let Some(old_full_post_md) = old_full_post.markdown {
         println!("Markdown Diff:");
         println!();
         diff::print_diff(&old_full_post_md, full_post.markdown.as_ref().unwrap());
         println!();
+    }
 
-        cli_io::prompt("Continue with update?").wrap_err("Prompting user failed")?
-    } else {
-        println!("HTML Diff:");
-        println!();
-        diff::print_diff(&old_full_post.html, &full_post.html);
-        println!();
+    println!("HTML Diff:");
+    println!();
+    diff::print_diff(&old_full_post.html, &full_post.html);
+    println!();
 
-        cli_io::prompt(
-            "Previously, this was an html only post. \
-            You are now adding markdown to the post. \
-            Metadata was not compared. Continue?", // TODO: compare metadata
-        )
-        .wrap_err("Prompting user failed")?
-    };
-
-    if !prompt_result {
+    if !cli_io::prompt("Continue with update?").wrap_err("Prompting user failed")? {
         return Err(eyre!("User aborted"));
     }
 

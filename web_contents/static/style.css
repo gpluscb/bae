@@ -743,7 +743,7 @@ h6{
   color: inherit;
 }
 
-#blog-post-contents > p, #blog-post-contents > .code-block{
+#blog-post-contents > *{
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
 }

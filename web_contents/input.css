@@ -50,7 +50,7 @@
     }
 }
 
-#blog-post-contents > p, #blog-post-contents > .code-block {
+#blog-post-contents > * {
     @apply my-2;
 }
 

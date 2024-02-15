@@ -1,13 +1,14 @@
 use crate::highlighting::{
     write_html_highlight_end, write_html_highlight_start, CssClassNameGenerator, HIGHLIGHT_NAMES,
 };
-use comrak::adapters::SyntaxHighlighterAdapter;
-use comrak::{markdown_to_html_with_plugins, Options, PluginsBuilder, RenderPluginsBuilder};
+use pulldown_cmark::{
+    CodeBlockKind, CowStr, Event, MetadataBlockKind, Options, Parser, Tag, TagEnd,
+};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Write;
 use thiserror::Error;
-use tracing::{error, warn};
+use tracing::error;
 use tree_sitter::QueryError;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
@@ -36,8 +37,14 @@ impl StandardClassNameGenerator {
 }
 
 #[derive()]
+pub struct Language {
+    pub canonical_name: &'static str,
+    pub config: HighlightConfiguration,
+}
+
+#[derive()]
 pub struct CodeBlockHighlighter<G> {
-    pub languages: HashMap<&'static str, HighlightConfiguration>,
+    pub languages: HashMap<&'static str, Language>,
     pub class_name_generator: G,
 }
 
@@ -51,7 +58,10 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
                 "",
             )?;
             rust.configure(&HIGHLIGHT_NAMES);
-            Ok(rust)
+            Ok(Language {
+                canonical_name: "Rust",
+                config: rust,
+            })
         };
 
         let mut languages = HashMap::new();
@@ -65,120 +75,197 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
     }
 }
 
-impl<G: CssClassNameGenerator + Send + Sync> SyntaxHighlighterAdapter for CodeBlockHighlighter<G> {
-    fn write_highlighted(
+#[derive(Debug, Error)]
+pub enum HighlighterError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Unrecognised language {0}")]
+    UnknownLanguage(String),
+    #[error("tree-sitter-highlight error: {0}")]
+    Highlight(#[from] tree_sitter_highlight::Error),
+}
+
+impl<G: CssClassNameGenerator> CodeBlockHighlighter<G> {
+    pub fn write_code_block_open_html<W: Write>(
         &self,
-        out: &mut dyn Write,
+        output: &mut W,
+        lang: Option<&str>,
+    ) -> Result<(), HighlighterError> {
+        let canonical_name = if let Some(lang) = lang {
+            self.languages
+                .get(lang)
+                .ok_or_else(|| HighlighterError::UnknownLanguage(lang.to_string()))?
+                .canonical_name
+        } else {
+            "Plain Text"
+        };
+
+        write!(
+            output,
+            r#"<pre class="code-block"><p class="language-display">{canonical_name}</p><code>"#,
+        )
+        .map_err(HighlighterError::from)
+    }
+
+    pub fn write_highlighted_code_html<W: Write>(
+        &self,
+        output: &mut W,
         lang: Option<&str>,
         code: &str,
-    ) -> std::io::Result<()> {
+    ) -> Result<(), HighlighterError> {
         let Some(lang) = lang else {
-            out.write_all(code.as_bytes())?;
+            output.write_all(code.as_bytes())?;
             return Ok(());
         };
 
-        let Some(config) = self.languages.get(lang) else {
-            warn!(lang, "Unrecognised language, falling back to plain text");
-            out.write_all(code.as_bytes())?;
-            return Ok(());
-        };
+        let language = self
+            .languages
+            .get(lang)
+            .ok_or_else(|| HighlighterError::UnknownLanguage(lang.to_string()))?;
 
-        #[derive(Debug, Error)]
-        enum TryHighlightError {
-            #[error("IO error: {0}")]
-            Io(#[from] std::io::Error),
-            #[error("tree-sitter-highlight error: {0}")]
-            Highlight(#[from] tree_sitter_highlight::Error),
-        }
+        let mut highlighter = Highlighter::new();
+        // Collect early so we can fall back to full plain text in case of error
+        // instead of having highlighted bits already in the output
+        let highlights: Vec<_> = highlighter
+            .highlight(&language.config, code.as_bytes(), None, |_| None)?
+            .collect::<Result<_, _>>()?;
 
-        fn try_highlight<G: CssClassNameGenerator>(
-            config: &HighlightConfiguration,
-            class_name_generator: &G,
-            out: &mut dyn Write,
-            code: &str,
-        ) -> Result<(), TryHighlightError> {
-            let mut highlighter = Highlighter::new();
-            // Collect early so we can fall back to full plain text in case of error
-            // instead of having highlighted bits already in the output
-            let highlights: Vec<_> = highlighter
-                .highlight(config, code.as_bytes(), None, |_| None)?
-                .collect::<Result<_, _>>()?;
-
-            for highlight in highlights {
-                match highlight {
-                    HighlightEvent::Source { start, end } => {
-                        out.write_all(code[start..end].as_bytes())?;
-                    }
-                    HighlightEvent::HighlightStart(highlight) => {
-                        write_html_highlight_start(
-                            out,
-                            highlight,
-                            "span",
-                            &HashMap::new(),
-                            class_name_generator,
-                        )?;
-                    }
-                    HighlightEvent::HighlightEnd => {
-                        write_html_highlight_end(out, "span")?;
-                    }
+        for highlight in highlights {
+            match highlight {
+                HighlightEvent::Source { start, end } => {
+                    output.write_all(code[start..end].as_bytes())?;
+                }
+                HighlightEvent::HighlightStart(highlight) => {
+                    write_html_highlight_start(
+                        output,
+                        highlight,
+                        "span",
+                        &HashMap::new(),
+                        &self.class_name_generator,
+                    )?;
+                }
+                HighlightEvent::HighlightEnd => {
+                    write_html_highlight_end(output, "span")?;
                 }
             }
-
-            Ok(())
         }
 
-        match try_highlight(config, &self.class_name_generator, out, code) {
-            Ok(()) => Ok(()),
-            Err(TryHighlightError::Io(err)) => Err(err),
-            Err(TryHighlightError::Highlight(err)) => {
-                error!(%err, "Error trying to highlight, falling back to plain text");
-                out.write_all(code.as_bytes())
-            }
-        }
+        Ok(())
     }
 
-    fn write_pre_tag(
-        &self,
-        output: &mut dyn Write,
-        attributes: HashMap<String, String>,
-    ) -> std::io::Result<()> {
-        write!(output, r#"<pre class="code-block""#)?;
-        for (attr, value) in attributes {
-            write!(output, r#" {attr}="{value}""#)?;
-        }
-        write!(output, ">")
+    pub fn write_code_block_close_html<W: Write>(output: &mut W) -> std::io::Result<()> {
+        output.write_all(br#"</code></pre>"#)
     }
 
-    fn write_code_tag(
+    pub fn write_code_block<W: Write>(
         &self,
-        output: &mut dyn Write,
-        attributes: HashMap<String, String>,
-    ) -> std::io::Result<()> {
-        write!(output, "<code")?;
-        for (attr, value) in attributes {
-            write!(output, r#" {attr}="{value}""#)?;
-        }
-        write!(output, ">")
+        output: &mut W,
+        lang: Option<&str>,
+        code: &str,
+    ) -> Result<(), HighlighterError> {
+        self.write_code_block_open_html(output, lang)?;
+        self.write_highlighted_code_html(output, lang, code)?;
+        Self::write_code_block_close_html(output).map_err(HighlighterError::from)
     }
 }
 
-pub fn render_md_to_html<G: CssClassNameGenerator + Send + Sync>(
-    markdown: &str,
-    options: &Options,
-    highlighter: &CodeBlockHighlighter<G>,
-) -> String {
-    // TODO: eliminate unwraps
-    let plugins = PluginsBuilder::default()
-        .render(
-            RenderPluginsBuilder::default()
-                .codefence_syntax_highlighter(Some(highlighter))
-                .build()
-                .unwrap(),
-        )
-        .build()
-        .unwrap();
+fn custom_render_code_blocks<
+    'e: 'h,
+    'h,
+    G: CssClassNameGenerator,
+    I: Iterator<Item = Event<'e>> + 'h,
+>(
+    iter: I,
+    highlighter: &'h CodeBlockHighlighter<G>,
+) -> impl Iterator<Item = Result<Event<'e>, HighlighterError>> + 'h {
+    struct CodeBlock<'a> {
+        lang: CowStr<'a>,
+        code: String,
+    }
 
-    markdown_to_html_with_plugins(markdown, options, &plugins)
+    let mut current_code_block = None;
+
+    iter.map(move |event| {
+        Ok(match (event, &mut current_code_block) {
+            (Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(lang))), None) => {
+                current_code_block = Some(CodeBlock {
+                    lang,
+                    code: String::new(),
+                });
+                None
+            }
+            (Event::Text(text), Some(CodeBlock { code, .. })) => {
+                code.push_str(&text);
+                None
+            }
+            (Event::End(TagEnd::CodeBlock), Some(_)) => {
+                let CodeBlock { lang, code } = current_code_block.take().unwrap();
+
+                let mut html = Vec::new();
+                highlighter.write_code_block(
+                    &mut html,
+                    (!lang.is_empty()).then(|| &*lang),
+                    &code,
+                )?;
+
+                Some(Event::Html(
+                    String::from_utf8(html)
+                        .expect("Generated invalid utf8 highlighting")
+                        .into(),
+                ))
+            }
+            (event, _) => Some(event),
+        })
+    })
+    .filter_map(Result::transpose)
+}
+
+struct Metadata(Option<String>);
+
+impl<'a, 'e> FromIterator<&'a Event<'e>> for Metadata {
+    fn from_iter<T: IntoIterator<Item = &'a Event<'e>>>(iter: T) -> Self {
+        let mut current_metadata_block = None;
+
+        for event in iter {
+            match (event, &mut current_metadata_block) {
+                (Event::Start(Tag::MetadataBlock(MetadataBlockKind::PlusesStyle)), None) => {
+                    current_metadata_block = Some(String::new());
+                }
+                (Event::End(TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle)), Some(_)) => {
+                    return Metadata(current_metadata_block);
+                }
+                (Event::Text(text), Some(current_metadata)) => {
+                    current_metadata.push_str(text);
+                }
+                _ => (),
+            }
+        }
+
+        Metadata(None)
+    }
+}
+
+pub struct RenderResult {
+    pub metadata: Option<String>,
+    pub html: String,
+}
+
+pub fn render_md_to_html<G: CssClassNameGenerator>(
+    markdown: &str,
+    options: Options,
+    highlighter: &CodeBlockHighlighter<G>,
+) -> Result<RenderResult, HighlighterError> {
+    let parser = Parser::new_ext(markdown, options);
+
+    let events: Vec<_> =
+        custom_render_code_blocks(parser, highlighter).collect::<Result<_, _>>()?;
+
+    let Metadata(metadata) = events.iter().collect();
+
+    let mut html = String::new();
+    pulldown_cmark::html::push_html(&mut html, events.into_iter());
+
+    Ok(RenderResult { metadata, html })
 }
 
 // TODO: Tests

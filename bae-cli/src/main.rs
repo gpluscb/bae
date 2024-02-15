@@ -1,22 +1,25 @@
 mod cli_io;
 mod diff;
 
-use bae_common::blog::{BlogPost, MdOrHtml, PartialBlogPost};
+use bae_common::blog::BlogPost;
 use bae_common::database;
 use bae_common::database::{Author, Tag};
 use bae_common::highlighting::Theme;
-use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
-use chrono::{DateTime, Utc};
+use bae_common::markdown_render::{
+    render_md_to_html, CodeBlockHighlighter, RenderResult, StandardClassNameGenerator,
+};
+use chrono::{DateTime, Duration, Utc};
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::{eyre, OptionExt, WrapErr};
-use comrak::nodes::{AstNode, NodeValue};
-use comrak::{Arena, ExtensionOptionsBuilder, ParseOptionsBuilder, RenderOptionsBuilder};
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+
+/// Probably slightly low-ball estimate but that's fine, it's a technical blog.
+const AVERAGE_READING_WPM: usize = 200;
 
 #[derive(Clone, Eq, PartialEq, Debug, Subcommand)]
 enum Command {
@@ -111,75 +114,67 @@ struct FrontMatter {
     pub tags: Vec<Tag>,
     pub accessible: bool,
     pub publication_date: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub reading_time_minutes: Option<u32>,
 }
 
-fn comrak_options() -> color_eyre::Result<comrak::Options> {
-    Ok(comrak::Options {
-        extension: ExtensionOptionsBuilder::default()
-            .front_matter_delimiter(Some("---".to_string()))
-            .strikethrough(true)
-            .tagfilter(true)
-            .table(true)
-            .autolink(true)
-            .tasklist(true)
-            .superscript(true)
-            .footnotes(true)
-            .multiline_block_quotes(true)
-            .build()
-            .wrap_err("Building ExtensionOptions failed")?,
-        parse: ParseOptionsBuilder::default()
-            .smart(true)
-            .build()
-            .wrap_err("Building ParseOptions failed")?,
-        render: RenderOptionsBuilder::default()
-            .unsafe_(true)
-            .build()
-            .wrap_err("Building RenderOptions failed")?,
-    })
+fn md_options() -> pulldown_cmark::Options {
+    use pulldown_cmark::Options as Opt;
+
+    Opt::ENABLE_TABLES
+        | Opt::ENABLE_FOOTNOTES
+        | Opt::ENABLE_STRIKETHROUGH
+        | Opt::ENABLE_TASKLISTS
+        | Opt::ENABLE_SMART_PUNCTUATION
+        | Opt::ENABLE_HEADING_ATTRIBUTES
+        | Opt::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS
 }
 
-fn extract_front_matter(md: &str, options: &comrak::Options) -> color_eyre::Result<FrontMatter> {
-    let arena = Arena::new();
-
-    let root = comrak::parse_document(&arena, md, options);
-
-    fn take_front_matter_string<'a: 'b, 'b>(node: &'a AstNode<'b>) -> Option<String> {
-        if let NodeValue::FrontMatter(front_matter) = &mut node.data.borrow_mut().value {
-            Some(std::mem::take(front_matter))
-        } else {
-            node.children().find_map(take_front_matter_string)
-        }
-    }
-
-    let front_matter_str =
-        take_front_matter_string(root).ok_or_eyre("No front matter in markdown")?;
-    let front_matter_trimmed = front_matter_str.trim().trim_matches('-');
-
-    serde_json::from_str(front_matter_trimmed)
-        .wrap_err("Front matter was not the correct json format")
+fn reading_time(contents: &str) -> Duration {
+    Duration::minutes((contents.split_whitespace().count() / AVERAGE_READING_WPM) as i64)
 }
 
 fn full_blog_post_from_md(markdown: String) -> color_eyre::Result<BlogPost> {
-    let options = comrak_options()?;
+    let options = md_options();
 
-    let front_matter = extract_front_matter(&markdown, &options)?;
-
-    let partial_post = PartialBlogPost {
-        url: front_matter.url,
-        title: front_matter.title,
-        description: front_matter.description,
-        author: front_matter.author,
-        contents: MdOrHtml::Markdown(markdown),
-        tags: front_matter.tags,
-        accessible: front_matter.accessible,
-        publication_date: front_matter.publication_date,
-    };
-
-    Ok(partial_post.generate_blog_post(
-        &options,
+    let RenderResult { metadata, html } = render_md_to_html(
+        &markdown,
+        options,
         &CodeBlockHighlighter::standard_config()
             .wrap_err("Getting standard CodeBlockHighlighter config failed")?,
-    ))
+    )
+    .wrap_err("Rendering markdown failed")?;
+
+    let metadata =
+        dbg!(metadata.ok_or_eyre("Blog post did not have correct pluses delimited metadata")?);
+
+    let FrontMatter {
+        url,
+        title,
+        description,
+        author,
+        tags,
+        accessible,
+        publication_date,
+        reading_time_minutes,
+    } = serde_json::from_str(&metadata).wrap_err("Front matter could not be parsed")?;
+
+    let reading_time = reading_time_minutes
+        .map(|minutes| Duration::minutes(minutes as i64))
+        .unwrap_or_else(|| reading_time(&markdown));
+
+    Ok(BlogPost {
+        url,
+        title,
+        description,
+        author,
+        markdown: Some(markdown),
+        html,
+        tags,
+        reading_time,
+        accessible,
+        publication_date,
+    })
 }
 
 async fn connect_database() -> color_eyre::Result<PgPool> {

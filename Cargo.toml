@@ -13,7 +13,7 @@ tower-http = { version = "0.5", features = ["trace", "fs"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 askama = "0.12"
-comrak = { version = "0.21", default-features = false }
+pulldown-cmark = { version = "0.10", default-features = false, features = ["html"] }
 tree-sitter = "0.20"
 tree-sitter-rust = "0.20"
 tree-sitter-highlight = "0.20"

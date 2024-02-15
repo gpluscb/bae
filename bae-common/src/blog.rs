@@ -1,30 +1,6 @@
 use crate::database::{Author, Tag};
-use crate::highlighting::CssClassNameGenerator;
-use crate::markdown_render::{render_md_to_html, CodeBlockHighlighter};
 use chrono::{DateTime, Duration, Utc};
-use serde::Deserialize;
 use std::fmt::{Display, Formatter};
-
-/// Probably slightly low-ball estimate but that's fine, it's a technical blog.
-const AVERAGE_READING_WPM: usize = 200;
-
-#[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
-pub enum MdOrHtml {
-    Markdown(String),
-    Html(String),
-}
-
-#[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
-pub struct PartialBlogPost {
-    pub url: String,
-    pub title: String,
-    pub description: String,
-    pub author: Author,
-    pub contents: MdOrHtml,
-    pub tags: Vec<Tag>,
-    pub accessible: bool,
-    pub publication_date: Option<DateTime<Utc>>,
-}
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct BlogPost {
@@ -38,76 +14,6 @@ pub struct BlogPost {
     pub reading_time: Duration,
     pub accessible: bool,
     pub publication_date: Option<DateTime<Utc>>,
-}
-
-fn generate_reading_time(content: &str) -> Duration {
-    Duration::minutes((content.split_whitespace().count() / AVERAGE_READING_WPM) as i64)
-}
-
-impl MdOrHtml {
-    pub fn contents(&self) -> &str {
-        match self {
-            MdOrHtml::Markdown(contents) => contents,
-            MdOrHtml::Html(contents) => contents,
-        }
-    }
-
-    pub fn markdown(&self) -> Option<&str> {
-        if let MdOrHtml::Markdown(md) = self {
-            Some(md)
-        } else {
-            None
-        }
-    }
-
-    pub fn html(&self) -> Option<&str> {
-        if let MdOrHtml::Html(html) = self {
-            Some(html)
-        } else {
-            None
-        }
-    }
-}
-
-impl PartialBlogPost {
-    pub fn generate_blog_post<G: CssClassNameGenerator + Send + Sync>(
-        self,
-        comrak_options: &comrak::Options,
-        highlighter: &CodeBlockHighlighter<G>,
-    ) -> BlogPost {
-        let PartialBlogPost {
-            url,
-            title,
-            description,
-            author,
-            contents,
-            tags,
-            accessible,
-            publication_date,
-        } = self;
-
-        let reading_time = generate_reading_time(contents.contents());
-        let (markdown, html) = match contents {
-            MdOrHtml::Markdown(md) => {
-                let html = render_md_to_html(&md, comrak_options, highlighter);
-                (Some(md), html)
-            }
-            MdOrHtml::Html(html) => (None, html),
-        };
-
-        BlogPost {
-            url,
-            title,
-            description,
-            author,
-            markdown,
-            html,
-            tags,
-            reading_time,
-            accessible,
-            publication_date,
-        }
-    }
 }
 
 impl BlogPost {

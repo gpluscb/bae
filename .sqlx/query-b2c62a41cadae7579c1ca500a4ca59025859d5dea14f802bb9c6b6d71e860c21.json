@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT tag FROM tag NATURAL LEFT JOIN blog_post WHERE ($1 OR (publication_date IS NOT NULL AND publication_date <= now())) GROUP BY tag ORDER BY tag ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tag",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b2c62a41cadae7579c1ca500a4ca59025859d5dea14f802bb9c6b6d71e860c21"
+}

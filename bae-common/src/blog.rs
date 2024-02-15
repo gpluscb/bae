@@ -18,10 +18,12 @@ pub struct BlogPost {
 
 impl BlogPost {
     pub fn is_public(&self) -> bool {
-        self.accessible
-            && self
-                .publication_date
-                .map_or(false, |date| date <= Utc::now())
+        self.publication_date
+            .map_or(false, |date| date <= Utc::now())
+    }
+
+    pub fn is_accessible_or_public(&self) -> bool {
+        self.accessible || self.is_public()
     }
 }
 

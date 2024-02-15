@@ -146,7 +146,7 @@ fn full_blog_post_from_md(markdown: String) -> color_eyre::Result<BlogPost> {
     .wrap_err("Rendering markdown failed")?;
 
     let metadata =
-        dbg!(metadata.ok_or_eyre("Blog post did not have correct pluses delimited metadata")?);
+        metadata.ok_or_eyre("Blog post did not have correct pluses delimited metadata")?;
 
     let FrontMatter {
         url,

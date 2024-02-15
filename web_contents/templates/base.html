@@ -14,8 +14,12 @@
 
 <body class="h-screen bg-purple-200 bg-fixed">
 {% block body %}
-<div id="site-contents" class="container mx-auto max-w-screen-lg">
-    {% block contents %}{% endblock %}
+<div id="site-contents" class="mx-auto max-w-screen-lg">
+    {% block wider_contents %}
+    <div id="inner-contents" class="mx-auto max-w-screen-md">
+        {% block contents %}{% endblock %}
+    </div>
+    {% endblock %}
 </div>
 {% endblock %}
 </body>

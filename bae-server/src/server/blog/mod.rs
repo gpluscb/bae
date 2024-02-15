@@ -78,7 +78,7 @@ pub async fn tagged(
 pub struct TagsPath {}
 
 pub async fn tags(TagsPath {}: TagsPath, State(database): State<PgPool>) -> Result<Html<String>> {
-    let tags = database::get_tags(&database).await?;
+    let tags = database::get_tags(true, &database).await?;
 
     let html = TagsTemplate { tags }.render()?;
     Ok(Html(html))

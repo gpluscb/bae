@@ -160,11 +160,20 @@ pub async fn get_blog_posts<'c, E: PgExecutor<'c>>(
     .await
 }
 
-pub async fn get_tags<'c, E: PgExecutor<'c>>(executor: E) -> Result<Vec<Tag>> {
+pub async fn get_tags<'c, E: PgExecutor<'c>>(
+    published_only: bool,
+    executor: E,
+) -> Result<Vec<Tag>> {
+    let no_public_filtering = !published_only;
+
     query_scalar!(
-        "SELECT DISTINCT tag \
-        FROM tag \
-        ORDER BY tag ASC"
+        "SELECT tag \
+        FROM tag NATURAL LEFT JOIN blog_post WHERE \
+            ($1 OR (publication_date IS NOT NULL \
+                AND publication_date <= now())) \
+        GROUP BY tag \
+        ORDER BY tag ASC",
+        no_public_filtering,
     )
     .fetch(executor)
     .map_ok(Tag)

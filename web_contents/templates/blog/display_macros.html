@@ -1,11 +1,11 @@
 {% macro display_posts(blog_posts) %}
-<ul>
+<ul class="list-none">
     {% for blog_post in blog_posts %}
-    <li class="list-none">
+    <li>
         <a href="{{ blog_post.full_path() }}" class="hover:no-underline text-inherit hover:text-inherit">
-            <div class="rounded-xl bg-purple-400 hover:bg-purple-700 p-2 mb-2">
-                <h2>{{ blog_post.title }}</h2>
-                <p>{{ blog_post.description }}</p>
+            <div class="rounded-xl bg-purple-300 border-purple-400 border-2 hover:bg-purple-400 px-2 py-0 my-2">
+                <h2 class="mx-0 mt-0 mb-1">{{ blog_post.title }}</h2>
+                <p class="m-0">{{ blog_post.description }}</p>
             </div>
         </a>
     </li>

@@ -1,3 +1,5 @@
+{% import "utils_macros.html" as utils %}
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -17,10 +19,9 @@
 {% block nav %}
 <nav class="bg-purple-400 py-0.5">
     <div class="mx-auto max-w-screen-md">
-        <a href="{{ crate::server::HomePath::default() }}" class="px-2 bg-purple-200 rounded-full mr-1">Bae Home</a>
-        <a href="{{ crate::server::blog::HomePath::default() }}" class="px-2 bg-purple-200 rounded-full mx-1">Blog Home</a>
-        {% block custom_nav_links %}
-        {% endblock %}
+        {% call utils::nav_link(crate::server::HomePath::default(), "Bae Home") %}
+        {% call utils::nav_link(crate::server::blog::HomePath::default(), "Blog Home") %}
+        {% block custom_nav_links %}{% endblock %}
     </div>
 </nav>
 {% endblock %}

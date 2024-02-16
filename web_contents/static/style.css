@@ -622,9 +622,13 @@ h6{
   --tw-backdrop-sepia:  ;
 }
 
-.mx-1{
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
+.m-0{
+  margin: 0px;
+}
+
+.mx-0{
+  margin-left: 0px;
+  margin-right: 0px;
 }
 
 .mx-auto{
@@ -637,20 +641,21 @@ h6{
   margin-bottom: 0.25rem;
 }
 
+.my-2{
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .mb-1{
   margin-bottom: 0.25rem;
 }
 
-.mb-2{
-  margin-bottom: 0.5rem;
+.mr-2{
+  margin-right: 0.5rem;
 }
 
-.ml-1{
-  margin-left: 0.25rem;
-}
-
-.mr-1{
-  margin-right: 0.25rem;
+.mt-0{
+  margin-top: 0px;
 }
 
 .block{
@@ -693,14 +698,28 @@ h6{
   border-radius: 0.75rem;
 }
 
+.border-2{
+  border-width: 2px;
+}
+
 .border-black{
   --tw-border-opacity: 1;
   border-color: rgb(0 0 0 / var(--tw-border-opacity));
 }
 
+.border-purple-400{
+  --tw-border-opacity: 1;
+  border-color: rgb(192 132 252 / var(--tw-border-opacity));
+}
+
 .bg-purple-200{
   --tw-bg-opacity: 1;
   background-color: rgb(233 213 255 / var(--tw-bg-opacity));
+}
+
+.bg-purple-300{
+  --tw-bg-opacity: 1;
+  background-color: rgb(216 180 254 / var(--tw-bg-opacity));
 }
 
 .bg-purple-400{
@@ -710,10 +729,6 @@ h6{
 
 .bg-fixed{
   background-attachment: fixed;
-}
-
-.p-2{
-  padding: 0.5rem;
 }
 
 .px-2{
@@ -810,9 +825,14 @@ h6{
   font-style: italic;
 }
 
-.hover\:bg-purple-700:hover{
+.hover\:bg-purple-300:hover{
   --tw-bg-opacity: 1;
-  background-color: rgb(126 34 206 / var(--tw-bg-opacity));
+  background-color: rgb(216 180 254 / var(--tw-bg-opacity));
+}
+
+.hover\:bg-purple-400:hover{
+  --tw-bg-opacity: 1;
+  background-color: rgb(192 132 252 / var(--tw-bg-opacity));
 }
 
 .hover\:text-inherit:hover{

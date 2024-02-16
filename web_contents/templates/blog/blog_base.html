@@ -1,5 +1,6 @@
 {% extends "../base.html" %}
+{% import "utils_macros.html" as utils %}
 
 {% block custom_nav_links %}
-<a href="{{ crate::server::blog::RssPath::default() }}" class="px-2 bg-purple-200 rounded-full ml-1">RSS</a>
+{% call utils::nav_link(crate::server::blog::RssPath::default(), "RSS") %}
 {% endblock %}

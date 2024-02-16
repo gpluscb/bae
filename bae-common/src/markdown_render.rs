@@ -63,10 +63,25 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
                 config: rust,
             })
         };
+        let js = || {
+            let mut js = HighlightConfiguration::new(
+                tree_sitter_javascript::language(),
+                tree_sitter_javascript::HIGHLIGHT_QUERY,
+                tree_sitter_javascript::INJECTION_QUERY,
+                tree_sitter_javascript::LOCALS_QUERY,
+            )?;
+            js.configure(&HIGHLIGHT_NAMES);
+            Ok(Language {
+                canonical_name: "JavaScript",
+                config: js,
+            })
+        };
 
         let mut languages = HashMap::new();
         languages.insert("rust", rust()?);
         languages.insert("rs", rust()?);
+        languages.insert("javascript", js()?);
+        languages.insert("js", js()?);
 
         Ok(CodeBlockHighlighter {
             languages,

@@ -63,7 +63,7 @@
 }
 
 #blog-post-contents > p > img {
-    @apply rounded-md border-purple-300 border-2;
+    @apply rounded-md border-purple-300 border-2 mx-auto;
 }
 
 #blog-post-contents > .code-block-div {

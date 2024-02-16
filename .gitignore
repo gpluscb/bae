@@ -2,7 +2,7 @@
 .idea/
 .env
 data/
-/resources
+/web_contents/static/blog_assets
 tailwindcss
 node_modules/
 package.json

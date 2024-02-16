@@ -190,6 +190,16 @@ async fn upload_blog_post(md_file: &Path, new_author: bool) -> color_eyre::Resul
 
     let full_post = full_blog_post_from_md(markdown)?;
 
+    if full_post.publication_date.is_some()
+        && !cli_io::prompt(
+            "You are attempting to upload a blog post that has a publishing date. \
+            Usually you might want to look at how it renders before deciding a publication date. \
+            Continue?",
+        )?
+    {
+        return Err(eyre!("User aborted"));
+    }
+
     let database = connect_database().await?;
 
     let mut transaction = database.begin().await?;

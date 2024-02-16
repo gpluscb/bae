@@ -81,3 +81,7 @@
 #blog-post-contents > blockquote {
     @apply text-lg pl-1.5 border-l-4 border-purple-700 bg-purple-300 rounded italic;
 }
+
+#blog-post-contents > hr {
+    @apply border-black h-0.5 mx-auto my-1
+}

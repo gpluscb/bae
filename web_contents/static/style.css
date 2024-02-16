@@ -827,6 +827,16 @@ h6{
   font-style: italic;
 }
 
+#blog-post-contents > hr{
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  height: 0.125rem;
+  --tw-border-opacity: 1;
+  border-color: rgb(0 0 0 / var(--tw-border-opacity));
+}
+
 .hover\:bg-purple-300:hover{
   --tw-bg-opacity: 1;
   background-color: rgb(216 180 254 / var(--tw-bg-opacity));

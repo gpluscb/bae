@@ -1,5 +1,4 @@
 use crate::model::ServerPathExt;
-use crate::server::blog::RssPath;
 use askama::Template;
 use bae_common::blog::BlogPost;
 use bae_common::database::Tag;

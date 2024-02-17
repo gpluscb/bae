@@ -759,13 +759,6 @@ h6{
   color: inherit;
 }
 
-#blog-post-contents details{
-  margin-top: 1.25rem;
-  margin-bottom: 1.25rem;
-  max-width: 100%;
-  /*TODO: Remove this*/
-}
-
 #blog-post-contents p > code{
   border-radius: 0.25rem;
   --tw-bg-opacity: 1;

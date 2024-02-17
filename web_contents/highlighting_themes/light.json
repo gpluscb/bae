@@ -55,13 +55,14 @@
   },
   {
     "highlight_names": [
-      "number"
+      "number",
+      "constant.builtin"
     ],
     "style": {
       "color": {
-        "r": 10,
-        "g": 15,
-        "b": 20,
+        "r": 15,
+        "g": 25,
+        "b": 210,
         "a": null
       }
     }

@@ -4,6 +4,9 @@
 .highlight-comment {
   color: rgb(100, 100, 100);
 }
+.highlight-constant-builtin {
+  color: rgb(15, 25, 210);
+}
 .highlight-constructor {
   color: rgb(35, 70, 210);
 }
@@ -24,7 +27,7 @@
   font-weight: bold;
 }
 .highlight-number {
-  color: rgb(10, 15, 20);
+  color: rgb(15, 25, 210);
 }
 .highlight-operator {
   color: rgb(0, 0, 0);

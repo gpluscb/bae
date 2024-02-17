@@ -76,12 +76,27 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
                 config: js,
             })
         };
+        let cpp = || {
+            let mut cpp = HighlightConfiguration::new(
+                tree_sitter_cpp::language(),
+                tree_sitter_cpp::HIGHLIGHT_QUERY,
+                "",
+                "",
+            )?;
+            cpp.configure(&HIGHLIGHT_NAMES);
+            Ok(Language {
+                canonical_name: "C++",
+                config: cpp,
+            })
+        };
 
         let mut languages = HashMap::new();
         languages.insert("rust", rust()?);
         languages.insert("rs", rust()?);
         languages.insert("javascript", js()?);
         languages.insert("js", js()?);
+        languages.insert("c++", cpp()?);
+        languages.insert("cpp", cpp()?);
 
         Ok(CodeBlockHighlighter {
             languages,

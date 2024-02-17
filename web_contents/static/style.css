@@ -759,7 +759,14 @@ h6{
   color: inherit;
 }
 
-#blog-post-contents > p > code{
+#blog-post-contents details{
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  max-width: 100%;
+  /*TODO: Remove this*/
+}
+
+#blog-post-contents p > code{
   border-radius: 0.25rem;
   --tw-bg-opacity: 1;
   background-color: rgb(216 180 254 / var(--tw-bg-opacity));
@@ -767,13 +774,13 @@ h6{
   padding-right: 0.125rem;
 }
 
-#blog-post-contents > .code-block-div, #blog-post-contents > p:has(img){
+#blog-post-contents .code-block-div, #blog-post-contents > p:has(img){
   margin-top: 1.25rem;
   margin-bottom: 1.25rem;
   max-width: 100%;
 }
 
-#blog-post-contents > p > img{
+#blog-post-contents p > img{
   margin-left: auto;
   margin-right: auto;
   border-radius: 0.375rem;
@@ -782,7 +789,7 @@ h6{
   border-color: rgb(216 180 254 / var(--tw-border-opacity));
 }
 
-#blog-post-contents > .code-block-div{
+#blog-post-contents .code-block-div{
   height: -moz-fit-content;
   height: fit-content;
   border-radius: 0.75rem;
@@ -793,7 +800,7 @@ h6{
   background-color: rgb(243 232 255 / var(--tw-bg-opacity));
 }
 
-#blog-post-contents > .code-block-div > .language-display{
+#blog-post-contents .code-block-div > .language-display{
   width: -moz-fit-content;
   width: fit-content;
   border-bottom-right-radius: 0.75rem;
@@ -807,14 +814,14 @@ h6{
   font-weight: 500;
 }
 
-#blog-post-contents > .code-block-div > .code-block{
+#blog-post-contents .code-block-div .code-block{
   overflow: auto;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   padding-bottom: 0.5rem;
 }
 
-#blog-post-contents > blockquote{
+#blog-post-contents blockquote{
   border-radius: 0.25rem;
   border-left-width: 4px;
   --tw-border-opacity: 1;

@@ -343,6 +343,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tree-sitter",
+ "tree-sitter-cpp",
  "tree-sitter-highlight",
  "tree-sitter-javascript",
  "tree-sitter-rust",
@@ -2486,6 +2487,16 @@ checksum = "e747b1f9b7b931ed39a548c1fae149101497de3c1fc8d9e18c62c1a66c683d3d"
 dependencies = [
  "cc",
  "regex",
+]
+
+[[package]]
+name = "tree-sitter-cpp"
+version = "0.20.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2569d867ce98fde6d0af7bc17d059c10cca187a003d50df18101003bc327f90c"
+dependencies = [
+ "cc",
+ "tree-sitter",
 ]
 
 [[package]]

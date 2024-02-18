@@ -28,6 +28,8 @@ enum Command {
         input_theme: PathBuf,
         #[arg(short, long)]
         output_file: PathBuf,
+        #[arg(long)]
+        check: bool,
     },
     UploadBlogPost {
         #[arg(short, long)]
@@ -70,7 +72,8 @@ async fn main() -> color_eyre::Result<()> {
         Command::GenerateHighlightCss {
             input_theme,
             output_file,
-        } => generate_highlight_css(&input_theme, &output_file),
+            check,
+        } => generate_highlight_css(&input_theme, &output_file, check),
         Command::UploadBlogPost {
             md_file,
             new_author,
@@ -83,24 +86,47 @@ async fn main() -> color_eyre::Result<()> {
     }
 }
 
-fn generate_highlight_css(input_theme: &Path, output_file: &Path) -> color_eyre::Result<()> {
+fn generate_highlight_css(
+    input_theme: &Path,
+    output_file: &Path,
+    check: bool,
+) -> color_eyre::Result<()> {
     let theme: Theme =
         serde_json::from_reader(File::open(input_theme).wrap_err("Opening input file failed")?)
             .wrap_err("Deserializing json to theme failed")?;
 
-    let mut output_file = File::options()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(output_file)
-        .wrap_err("Opening output file failed")?;
+    if check {
+        let output_file_contents =
+            std::fs::read(output_file).wrap_err("Opening output file failed")?;
 
-    theme
-        .write_css_with_class_names(
-            &mut output_file,
-            &StandardClassNameGenerator::standard_generator(),
-        )
-        .wrap_err("Writing css failed")?;
+        let mut actual_output = Vec::new();
+        theme
+            .write_css_with_class_names(
+                &mut actual_output,
+                &StandardClassNameGenerator::standard_generator(),
+            )
+            .wrap_err("Writing css failed")?;
+
+        if output_file_contents != actual_output {
+            return Err(eyre!(
+                "Check failed, highlight style output file is not up-to-date."
+            ));
+        }
+    } else {
+        let mut output_file = File::options()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(output_file)
+            .wrap_err("Opening output file failed")?;
+
+        theme
+            .write_css_with_class_names(
+                &mut output_file,
+                &StandardClassNameGenerator::standard_generator(),
+            )
+            .wrap_err("Writing css failed")?;
+    }
 
     Ok(())
 }

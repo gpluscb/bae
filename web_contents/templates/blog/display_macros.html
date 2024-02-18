@@ -1,11 +1,32 @@
 {% macro display_posts(blog_posts) %}
-<ul class="list-none">
+<ul class="list-none p-0">
     {% for blog_post in blog_posts %}
     <li>
         <a href="{{ blog_post.full_path() }}" class="hover:no-underline text-inherit hover:text-inherit">
             <div class="rounded-xl bg-purple-300 border-purple-400 border-2 hover:bg-purple-400 px-2 py-0 my-2">
-                <h2 class="mx-0 mt-0 mb-1">{{ blog_post.title }}</h2>
-                <p class="m-0">{{ blog_post.description }}</p>
+                <h2 class="m-0">{{ blog_post.title }}</h2>
+                <p class="text-sm font-light">
+                    <span>{{ blog_post.author }}</span>
+                    -
+                    <span>
+                    {% if let Some(publication_date) = blog_post.publication_date %}
+                        {{ publication_date.format("%Y-%m-%d") }}
+                    {% else %}
+                        Unpublished
+                    {% endif %}
+                    </span>
+                    -
+                    <span class="font-normal">
+                    {% for tag in blog_post.tags -%}
+                        #{{tag}}{% if !loop.last %}, {% endif -%}
+                    {% endfor %}
+                    </span>
+                    -
+                    <span>
+                        {{ blog_post.reading_time.num_minutes() }} minute read
+                    </span>
+                </p>
+                <p class="my-0.5">{{ blog_post.description }}</p>
             </div>
         </a>
     </li>

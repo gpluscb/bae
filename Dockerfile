@@ -17,8 +17,15 @@ WORKDIR /app
 # Leverage a bind mount to the src directory to avoid having to copy the
 # source code into the container. Once built, copy the executable to an
 # output directory before the cache mounted /app/target is unmounted.
-COPY . .
-RUN --mount=type=cache,target=/app/target/ \
+RUN --mount=type=bind,source=.sqlx,target=.sqlx,readonly \
+    --mount=type=bind,source=web_contents/templates,target=web_contents/templates,readonly \
+    --mount=type=bind,source=web_contents/static,target=web_contents/static,readonly \
+    --mount=type=bind,source=Cargo.toml,target=Cargo.toml,readonly \
+    --mount=type=bind,source=Cargo.lock,target=Cargo.lock,readonly \
+    --mount=type=bind,source=bae-cli/,target=bae-cli/,readonly \
+    --mount=type=bind,source=bae-common/,target=bae-common/,readonly \
+    --mount=type=bind,source=bae-server/,target=bae-server/,readonly \
+    --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
     <<EOF
 set -e

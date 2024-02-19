@@ -6,6 +6,7 @@ use bae_common::database;
 use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerator};
 use serde::Deserialize;
 use sqlx::PgPool;
+use std::path::PathBuf;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
@@ -20,6 +21,7 @@ struct Env {
     base_uri: String,
     socket_address: String,
     database_url: String,
+    static_path: PathBuf,
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
@@ -59,7 +61,9 @@ async fn main() {
     };
 
     let tracing_layer = TraceLayer::new_for_http();
-    let app = server::router().layer(tracing_layer).with_state(app_state);
+    let app = server::router(&env.static_path)
+        .layer(tracing_layer)
+        .with_state(app_state);
 
     let listener = TcpListener::bind(env.socket_address)
         .await

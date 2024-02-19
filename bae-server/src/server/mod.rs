@@ -12,6 +12,7 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use bae_common::database;
 use serde::Deserialize;
+use std::path::Path;
 use templates::{ErrorTemplate, HomeTemplate};
 use thiserror::Error;
 use tower_http::services::ServeDir;
@@ -60,13 +61,12 @@ impl IntoResponse for Error {
     }
 }
 
-pub fn router() -> Router<AppState> {
+pub fn router(static_path: impl AsRef<Path>) -> Router<AppState> {
     Router::new()
         .typed_get(home)
         .merge(blog::router())
         .fallback_service(
-            ServeDir::new("web_contents/static")
-                .fallback((|| async { Error::NotFound }).into_service()),
+            ServeDir::new(static_path).fallback((|| async { Error::NotFound }).into_service()),
         )
 }
 

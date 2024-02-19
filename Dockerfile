@@ -71,4 +71,4 @@ COPY --from=build /static/ /web_contents/static/
 EXPOSE 8080
 
 # What the container should run when it is started.
-CMD ["/bin/server"]
+CMD ["/bin/bash", "-c", "env DATABASE_URL=\"$(cat /run/secrets/database_url)\" /bin/server"]

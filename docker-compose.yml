@@ -9,20 +9,39 @@ services:
     network_mode: host
     ports:
       - "8080:8080"
-    env_file: .env
+    env_file: server.env
+    secrets:
+      - database_url
     depends_on:
       postgres:
         condition: service_healthy
   postgres:
     image: postgres
     restart: unless-stopped
-    env_file: .env
+    environment:
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
     ports:
       - "5432:5432"
     volumes:
       - ./data:/var/lib/postgresql/data
+    secrets:
+      - postgres_db
+      - postgres_user
+      - postgres_password
     healthcheck:
       test: [ "CMD", "pg_isready" ]
       interval: 10s
       timeout: 5s
       retries: 5
+
+secrets:
+  postgres_db:
+    file: secrets/POSTGRES_DB.txt
+  postgres_user:
+    file: secrets/POSTGRES_USER.txt
+  postgres_password:
+    file: secrets/POSTGRES_PASSWORD.txt
+  database_url:
+    file: secrets/DATABASE_URL.txt

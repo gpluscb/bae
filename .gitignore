@@ -1,9 +1,11 @@
 /target
 .idea/
 .env
+server.env
 data/
 /web_contents/static/blog_assets
 tailwindcss
 node_modules/
 package.json
 package-lock.json
+secrets/

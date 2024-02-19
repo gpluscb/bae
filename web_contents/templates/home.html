@@ -15,7 +15,46 @@
 
 <h2>Projects</h2>
 
-<code>==== Under Construction ====</code>
+<h3>Bae</h3>
+<p>
+    <a href="{{ crate::server::HomePath::default() }}">Bae</a> stands for blog and eh, and you are looking at it right now.
+    The source code is <a href="https://github.com/gpluscb/bae">on GitHub</a>.
+    Surprisingly, I'm fine with the quality of the code here.
+    It's a first for me for a lot of technologies.
+    My first time really working on frontend stuff with HTML/CSS, I think it looks pretty fine for that.
+    I love how the <a href="{{ crate::server::blog::HomePath::default() }}">blog</a> turned out
+    (I took a lot of inspiration from <a href="https://fasterthanli.me">fasterthanli.me</a>, so just gonna hope that's cool).
+    It's also my first time doing anything with Docker and VPS things, very exciting.
+</p>
+
+<h3>SSBToni</h3>
+<p>
+    <a href="https://discord.com/application-directory/698889469532569671">SSBToni</a> is a Discord bot for the competitive Super Smash Bros. community.
+    She does frame data and hitbox display and more.
+    The source code is <a href="https://github.com/gpluscb/toni">on GitHub</a>.
+    Quite ugly to be honest. But it's Java, so I think that's probably fine.
+</p>
+
+<h3>instant-glicko-2</h3>
+<p>
+    <a href="https://crates.io/crates/instant-glicko-2">instant-glicko-2</a> is a Rust crate to calculate <a href="http://www.glicko.net/glicko/glicko2.pdf">Glicko-2</a> ratings that update instantly after a game completes.
+    Usually, you'd have to wait to the end of a rating period to have ratings update.
+    I wrote about how to side-step that <a href="https://gist.github.com/gpluscb/302d6b71a8d0fe9f4350d45bc828f802">here</a>, but that's mildly out of date now.
+    The source code is <a href="https://github.com/gpluscb/instant-glicko-2">on GitHub</a>.
+</p>
+
+<h3>cache-compute</h3>
+<p>
+    Another thing I stole from fasterthanlime?
+    How wild is that.
+    <a href="https://crates.io/crates/cache-compute">cache-compute</a> is a Rust crate to cache results of async computations.
+    I needed to cache some stuff for a personal project, but it turned out to be a harder problem than initially thought.
+    If the cache is empty, you may want to start a computation.
+    But you don't want to start one if someone else already did, you just want to be notified when that one is finished.
+    Well luckily, at about the same time I <code>// TODO</code>d that, Amos published a very good <a href="https://fasterthanli.me/articles/request-coalescing-in-async-rust">article</a> on the topic.
+    And the implementation I created from that for my project grew decent enough to be factored out into a single-file crate,
+    which I improved further and then open sourced <a href="https://github.com/gpluscb/cache-compute">on GitHub</a>.
+</p>
 
 <h2>About me</h2>
 

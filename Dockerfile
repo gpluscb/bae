@@ -7,9 +7,7 @@
 ################################################################################
 # Create a stage for building the application.
 
-ARG APP_NAME=bae-server
 FROM rust:slim-bullseye AS build
-ARG APP_NAME
 WORKDIR /app
 
 # Build the application.
@@ -24,8 +22,10 @@ RUN --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
     <<EOF
 set -e
-env SQLX_OFFLINE=true cargo build --release -p $APP_NAME
-cp ./target/release/$APP_NAME /bin/server
+env SQLX_OFFLINE=true cargo build --release -p bae-server
+env SQLX_OFFLINE=true cargo build --release -p bae-cli
+cp ./target/release/bae-server /bin/server
+cp ./target/release/bae-cli /bin/cli
 cp -r ./web_contents/static /static
 EOF
 
@@ -57,6 +57,7 @@ USER appuser
 
 # Copy the executable and assets from the "build" stage.
 COPY --from=build /bin/server /bin/
+COPY --from=build /bin/cli /bin/
 COPY --from=build /static/ /web_contents/static/
 
 # Expose the port that the application listens on.

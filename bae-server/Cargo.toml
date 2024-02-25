@@ -9,6 +9,7 @@ edition = "2021"
 bae-common = { path = "../bae-common" }
 axum.workspace = true
 axum-extra.workspace = true
+axum-server.workspace = true
 tokio.workspace = true
 tower-http.workspace = true
 tracing.workspace = true

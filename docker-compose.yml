@@ -5,13 +5,15 @@ services:
     build:
       context: .
       target: final
-    restart: unless-stopped
     network_mode: host
     ports:
       - "8080:8080"
+      - "4433:4433"
     env_file: server.env
     secrets:
       - database_url
+      - localhost_crt
+      - localhost_key
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,3 +47,7 @@ secrets:
     file: secrets/POSTGRES_PASSWORD.txt
   database_url:
     file: secrets/DATABASE_URL.txt
+  localhost_crt:
+    file: secrets/localhost.crt
+  localhost_key:
+    file: secrets/localhost.key

@@ -7,6 +7,7 @@ resolver = "2"
 [workspace.dependencies]
 axum = { version = "0.7", features = ["tracing", "macros"] }
 axum-extra = { version = "0.9", features = ["typed-routing", "typed-header", "query"] }
+axum-server = { version = "0.6", features = ["tls-rustls"] }
 tokio = { version = "1.35", features = ["macros", "rt-multi-thread", "signal"] }
 futures = "0.3"
 tower-http = { version = "0.5", features = ["trace", "fs"] }

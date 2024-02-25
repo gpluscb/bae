@@ -114,7 +114,7 @@ pub async fn get_blog_post<'c, E: PgExecutor<'c>>(
     query_as!(
         BlogPostRecord,
         "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
-            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+            accessible, publication_date, array_remove(array_agg(tag ORDER BY tag ASC), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
         WHERE url=$1 AND ($2 OR (accessible OR \
             (publication_date IS NOT NULL \
@@ -142,7 +142,7 @@ pub async fn get_blog_posts<'c, E: PgExecutor<'c>>(
     query_as!(
         BlogPostRecord,
         "SELECT url, title, description, author, markdown, html, reading_time_minutes, \
-            accessible, publication_date, array_remove(array_agg(tag), NULL) as tags \
+            accessible, publication_date, array_remove(array_agg(tag ORDER BY tag ASC), NULL) as tags \
         FROM blog_post NATURAL LEFT JOIN tag \
         WHERE \
             ($1 OR author = ANY($2)) \
@@ -150,7 +150,7 @@ pub async fn get_blog_posts<'c, E: PgExecutor<'c>>(
                 AND publication_date <= now())) \
         GROUP BY url \
         HAVING $4 OR bool_or(tag = ANY($5)) \
-        ORDER BY publication_date DESC",
+        ORDER BY publication_date DESC NULLS LAST, title ASC",
         no_author_filtering,
         &authors.unwrap_or_default() as &[Author],
         no_public_filtering,
@@ -330,20 +330,6 @@ mod tests {
     use itertools::Itertools;
     use sqlx::PgPool;
 
-    fn is_sorted<T: PartialOrd, I: Iterator<Item = T>>(iter: &mut I) -> bool {
-        let Some(mut previous) = iter.next() else {
-            return true;
-        };
-        iter.all(|next| {
-            if previous <= next {
-                previous = next;
-                true
-            } else {
-                false
-            }
-        })
-    }
-
     struct ExpectedBlogPosts {
         public: BlogPost,
         accessible: BlogPost,
@@ -365,7 +351,7 @@ mod tests {
                     author: Author("Quiet".to_string()),
                     markdown: Some("test *bold*".to_string()),
                     html: "test <b>bold</b>".to_string(),
-                    tags: vec![Tag("public".to_string()), Tag("post".to_string())],
+                    tags: vec![Tag("post".to_string()), Tag("public".to_string())],
                     reading_time: Duration::minutes(1),
                     accessible: false,
                     publication_date: Some(DateTime::UNIX_EPOCH),
@@ -426,9 +412,9 @@ mod tests {
                     markdown: Some(include_str!("../test_fixtures/lorem.txt").to_string()),
                     html: include_str!("../test_fixtures/lorem.txt").to_string(),
                     tags: vec![
-                        Tag("public".to_string()),
                         Tag("lorem-ipsum".to_string()),
                         Tag("post".to_string()),
+                        Tag("public".to_string()),
                     ],
                     reading_time: Duration::minutes(60),
                     accessible: true,
@@ -437,23 +423,36 @@ mod tests {
             }
         }
 
-        /// In `blog_posts` insertion order.
+        /// In the order they should be returned in by `super::get_blog_posts(None, None, false, db)`.
         fn all(&self) -> [&BlogPost; 6] {
             [
+                &self.accessible_public_in_future,
+                &self.public_in_future,
+                &self.long_post,
                 &self.public,
                 &self.accessible,
                 &self.not_accessible,
-                &self.public_in_future,
-                &self.accessible_public_in_future,
-                &self.long_post,
             ]
+        }
+
+        fn get_expected_for_params<'a>(
+            &'a self,
+            authors: Option<&'a [Author]>,
+            tags: Option<&'a [Tag]>,
+            published_only: bool,
+        ) -> impl IntoIterator<Item = &'a BlogPost> + 'a {
+            self.all()
+                .into_iter()
+                .filter(move |post| !published_only || post.is_public())
+                .filter(move |post| authors.map_or(true, |authors| authors.contains(&post.author)))
+                .filter(move |post| {
+                    tags.map_or(true, |tags| tags.iter().any(|tag| post.tags.contains(tag)))
+                })
         }
     }
 
     #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts", "tags")))]
-    pub async fn blog_post_tests(pool: PgPool) -> super::Result<()> {
-        // Test if all the data looks alright
-
+    pub async fn get_blog_post_test(pool: PgPool) -> super::Result<()> {
         let expected_blog_posts = ExpectedBlogPosts::new();
 
         for expected_blog_post in expected_blog_posts.all() {
@@ -488,49 +487,84 @@ mod tests {
             }
         }
 
-        // Test get_blog_posts for all blog posts, in particular order
+        Ok(())
+    }
 
-        let all_blog_posts = super::get_blog_posts(None, None, false, &pool).await?;
-        assert!(expected_blog_posts
+    #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts", "tags")))]
+    async fn get_blog_posts_test(pool: PgPool) -> super::Result<()> {
+        let expected_blog_posts = ExpectedBlogPosts::new();
+
+        let checked_authors: Vec<_> = expected_blog_posts
             .all()
             .into_iter()
-            .all(|blog_post| all_blog_posts.contains(blog_post)));
-
-        assert_eq!(all_blog_posts.len(), expected_blog_posts.all().len());
-        assert!(is_sorted(
-            &mut all_blog_posts
-                .iter()
-                .flat_map(|post| post.publication_date)
-                .rev()
-        ));
-        // We also assert that all posts without publication dates are at the start
-        let mut first_publication_date_found = false;
-        assert!(all_blog_posts.iter().all(|post| {
-            if post.publication_date.is_some() {
-                // Found a publication date
-                first_publication_date_found = true;
-                true
-            } else {
-                // Otherwise, all previous publication dates must have been Nones
-                !first_publication_date_found
-            }
-        }));
-
-        // Test get_blog_posts for public blog posts, in particular order
-
-        let expected_public_blog_posts: Vec<_> = expected_blog_posts
-            .all()
-            .into_iter()
-            .filter(|post| post.is_public())
-            .sorted_unstable_by_key(|post| post.publication_date.unwrap())
-            .rev()
+            .map(|post| &post.author)
+            .unique()
             .cloned()
+            .chain(std::iter::once(Author("Unknown".to_string())))
             .collect();
 
-        assert_eq!(
-            super::get_blog_posts(None, None, true, &pool).await?,
-            expected_public_blog_posts,
-        );
+        let checked_tags: Vec<_> = expected_blog_posts
+            .all()
+            .into_iter()
+            .flat_map(|post| &post.tags)
+            .unique()
+            .cloned()
+            .chain(std::iter::once(Tag("Unknown".to_string())))
+            .collect();
+
+        let checked_public_flags = [true, false];
+
+        // Check that everything is as expected for no authors and no tags
+        for &public_flag in &checked_public_flags {
+            let blog_posts = super::get_blog_posts(None, None, public_flag, &pool).await?;
+            let expected = expected_blog_posts.get_expected_for_params(None, None, public_flag);
+
+            itertools::assert_equal(&blog_posts, expected);
+        }
+
+        // Check that everything is as expected for single author and tag
+        for &public_flag in &checked_public_flags {
+            for author in checked_authors.iter() {
+                for tag in checked_tags.iter() {
+                    let authors = [author.clone()];
+                    let tags = [tag.clone()];
+
+                    let blog_posts =
+                        super::get_blog_posts(Some(&authors), Some(&tags), public_flag, &pool)
+                            .await?;
+
+                    let expected = expected_blog_posts.get_expected_for_params(
+                        Some(&authors),
+                        Some(&tags),
+                        public_flag,
+                    );
+
+                    itertools::assert_equal(&blog_posts, expected);
+                }
+            }
+        }
+
+        // Check that everything is as expected for two authors and two tags
+        for &public_flag in &checked_public_flags {
+            for authors in checked_authors.iter().permutations(2) {
+                for tags in checked_tags.iter().permutations(2) {
+                    let authors = [authors[0].clone(), authors[1].clone()];
+                    let tags = [tags[0].clone(), tags[1].clone()];
+
+                    let blog_posts =
+                        super::get_blog_posts(Some(&authors), Some(&tags), public_flag, &pool)
+                            .await?;
+
+                    let expected = expected_blog_posts.get_expected_for_params(
+                        Some(&authors),
+                        Some(&tags),
+                        public_flag,
+                    );
+
+                    itertools::assert_equal(&blog_posts, expected);
+                }
+            }
+        }
 
         Ok(())
     }

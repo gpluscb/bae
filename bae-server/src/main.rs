@@ -13,12 +13,13 @@ use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerat
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::future::Future;
+use std::io::Write;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
-use tracing::debug;
+use tracing::{debug, info};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -100,7 +101,7 @@ async fn main() {
         .with_state(app_state);
 
     let addr = SocketAddr::new(ip_addr, ports.https);
-    debug!("Starting HTTPS server on {addr}");
+    info!("Starting HTTPS server on {addr}");
     axum_server::bind_rustls(addr, tls_config)
         .serve(app.into_make_service())
         .await
@@ -141,7 +142,7 @@ where
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .expect("Setting up listener for HTTP to HTTPS redirect failed");
-    debug!("HTTP to HTTPS redirect server listening on {addr}");
+    info!("HTTP to HTTPS redirect server listening on {addr}");
     axum::serve(listener, redirect.into_make_service())
         .with_graceful_shutdown(signal)
         .await
@@ -172,5 +173,6 @@ async fn shutdown_signal(handle: Handle) {
         _ = terminate => {},
     }
 
+    info!("Shutdown signal received, shutting down");
     handle.graceful_shutdown(Some(Duration::from_secs(10)))
 }

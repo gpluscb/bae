@@ -5,6 +5,7 @@ services:
     build:
       context: .
       target: final
+    restart: unless-stopped
     network_mode: host
     ports:
       - "8080:8080"
@@ -33,7 +34,7 @@ services:
       - postgres_user
       - postgres_password
     healthcheck:
-      test: [ "CMD", "pg_isready" ]
+      test: [ "CMD", "/bin/bash", "-c", "pg_isready -d \"$(cat /run/secrets/postgres_db)\" -U \"$(cat /run/secrets/postgres_user)\"" ]
       interval: 10s
       timeout: 5s
       retries: 5

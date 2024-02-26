@@ -492,9 +492,32 @@ mod tests {
 
     #[sqlx::test(fixtures(path = "../test_fixtures", scripts("authors", "blog_posts", "tags")))]
     async fn get_blog_posts_test(pool: PgPool) -> super::Result<()> {
+        fn tested_filter_parameters<T: Clone>(authors_or_tags: Vec<T>) -> Vec<Option<Vec<T>>> {
+            let mut out = Vec::new();
+
+            // No filtering
+            out.push(None);
+            // No authors/tags (should result in no results)
+            out.push(Some(Vec::new()));
+            // All authors/tags
+            out.push(Some(authors_or_tags.clone()));
+
+            // Single authors/tags
+            for author_or_tag in &authors_or_tags {
+                out.push(Some(vec![author_or_tag.clone()]));
+            }
+
+            // Two authors/tags
+            for permutation in authors_or_tags.into_iter().permutations(2) {
+                out.push(Some(permutation))
+            }
+
+            out
+        }
+
         let expected_blog_posts = ExpectedBlogPosts::new();
 
-        let checked_authors: Vec<_> = expected_blog_posts
+        let all_tested_authors: Vec<_> = expected_blog_posts
             .all()
             .into_iter()
             .map(|post| &post.author)
@@ -503,7 +526,9 @@ mod tests {
             .chain(std::iter::once(Author("Unknown".to_string())))
             .collect();
 
-        let checked_tags: Vec<_> = expected_blog_posts
+        let tested_author_params = tested_filter_parameters(all_tested_authors);
+
+        let all_tested_tags: Vec<_> = expected_blog_posts
             .all()
             .into_iter()
             .flat_map(|post| &post.tags)
@@ -512,52 +537,24 @@ mod tests {
             .chain(std::iter::once(Tag("Unknown".to_string())))
             .collect();
 
+        let tested_tag_params = tested_filter_parameters(all_tested_tags);
+
         let checked_public_flags = [true, false];
 
-        // Check that everything is as expected for no authors and no tags
-        for &public_flag in &checked_public_flags {
-            let blog_posts = super::get_blog_posts(None, None, public_flag, &pool).await?;
-            let expected = expected_blog_posts.get_expected_for_params(None, None, public_flag);
-
-            itertools::assert_equal(&blog_posts, expected);
-        }
-
-        // Check that everything is as expected for single author and tag
-        for &public_flag in &checked_public_flags {
-            for author in checked_authors.iter() {
-                for tag in checked_tags.iter() {
-                    let authors = [author.clone()];
-                    let tags = [tag.clone()];
-
-                    let blog_posts =
-                        super::get_blog_posts(Some(&authors), Some(&tags), public_flag, &pool)
-                            .await?;
-
-                    let expected = expected_blog_posts.get_expected_for_params(
-                        Some(&authors),
-                        Some(&tags),
+        for public_flag in checked_public_flags {
+            for author_params in &tested_author_params {
+                for tag_params in &tested_tag_params {
+                    let blog_posts = super::get_blog_posts(
+                        author_params.as_deref(),
+                        tag_params.as_deref(),
                         public_flag,
-                    );
-
-                    itertools::assert_equal(&blog_posts, expected);
-                }
-            }
-        }
-
-        // Check that everything is as expected for two authors and two tags
-        for &public_flag in &checked_public_flags {
-            for authors in checked_authors.iter().permutations(2) {
-                for tags in checked_tags.iter().permutations(2) {
-                    let authors = [authors[0].clone(), authors[1].clone()];
-                    let tags = [tags[0].clone(), tags[1].clone()];
-
-                    let blog_posts =
-                        super::get_blog_posts(Some(&authors), Some(&tags), public_flag, &pool)
-                            .await?;
+                        &pool,
+                    )
+                    .await?;
 
                     let expected = expected_blog_posts.get_expected_for_params(
-                        Some(&authors),
-                        Some(&tags),
+                        author_params.as_deref(),
+                        tag_params.as_deref(),
                         public_flag,
                     );
 
@@ -587,6 +584,5 @@ mod tests {
         Ok(())
     }
 
-    // TODO: Add authors tests
     // TODO: Add insert/update tests
 }

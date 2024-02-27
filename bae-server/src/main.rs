@@ -19,7 +19,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -93,7 +93,7 @@ async fn main() {
     let shutdown_future = shutdown_signal(handle.clone());
 
     // Spawn server to redirect HTTP to HTTPS
-    tokio::spawn(redirect_to_https_server(ip_addr, ports, shutdown_future));
+    let redirect_server = tokio::spawn(redirect_to_https_server(ip_addr, ports, shutdown_future));
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::router(&env.static_path)
@@ -108,7 +108,10 @@ async fn main() {
         .await
         .expect("Error serving");
 
-    info!("Shutdown successful");
+    match redirect_server.await {
+        Ok(()) => info!("Shutdown successful"),
+        Err(error) => error!(%error, "Error shutting down HTTP to HTTPS redirect server"),
+    }
 }
 
 // https://github.com/tokio-rs/axum/blob/4d65ba0215b57797193ec49245d32d4dd79bb701/examples/tls-graceful-shutdown/src/main.rs

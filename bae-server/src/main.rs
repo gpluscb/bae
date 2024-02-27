@@ -103,9 +103,12 @@ async fn main() {
     let addr = SocketAddr::new(ip_addr, ports.https);
     info!("Starting HTTPS server on {addr}");
     axum_server::bind_rustls(addr, tls_config)
+        .handle(handle)
         .serve(app.into_make_service())
         .await
         .expect("Error serving");
+
+    info!("Shutdown successful");
 }
 
 // https://github.com/tokio-rs/axum/blob/4d65ba0215b57797193ec49245d32d4dd79bb701/examples/tls-graceful-shutdown/src/main.rs

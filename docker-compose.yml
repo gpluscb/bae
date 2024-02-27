@@ -11,6 +11,10 @@ services:
       - "8080:8080"
       - "4433:4433"
     env_file: server.env
+    environment:
+      - TLS_CERT_PATH=/run/secrets/localhost_crt
+      - TLS_KEY_PATH=/run/secrets/localhost_key
+      - STATIC_PATH=/web_contents/static/
     secrets:
       - database_url
       - localhost_crt

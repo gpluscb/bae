@@ -13,13 +13,12 @@ use bae_common::markdown_render::{CodeBlockHighlighter, StandardClassNameGenerat
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::future::Future;
-use std::io::Write;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -119,7 +118,7 @@ async fn redirect_to_https_server<F>(ip: IpAddr, ports: Ports, signal: F)
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    fn make_https(host: String, uri: Uri, ports: Ports) -> Result<Uri, BoxError> {
+    fn make_https(host: &str, uri: Uri, ports: Ports) -> Result<Uri, BoxError> {
         let mut parts = uri.into_parts();
 
         parts.scheme = Some(axum::http::uri::Scheme::HTTPS);
@@ -135,7 +134,7 @@ where
     }
 
     let redirect = move |Host(host): Host, uri: Uri| async move {
-        match make_https(host, uri, ports) {
+        match make_https(&host, uri, ports) {
             Ok(uri) => Ok(Redirect::permanent(&uri.to_string())),
             Err(error) => {
                 tracing::error!(%error, "Failed to convert URI to HTTPS");
@@ -180,5 +179,5 @@ async fn shutdown_signal(handle: Handle) {
     }
 
     info!("Shutdown signal received, shutting down");
-    handle.graceful_shutdown(Some(Duration::from_secs(10)))
+    handle.graceful_shutdown(Some(Duration::from_secs(10)));
 }

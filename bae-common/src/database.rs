@@ -525,6 +525,7 @@ mod tests {
             .cloned()
             .chain(std::iter::once(Author("Unknown".to_string())))
             .collect();
+        assert_eq!(all_tested_authors.len(), 3);
 
         let tested_author_params = tested_filter_parameters(all_tested_authors);
 
@@ -536,6 +537,7 @@ mod tests {
             .cloned()
             .chain(std::iter::once(Tag("Unknown".to_string())))
             .collect();
+        assert_eq!(all_tested_tags.len(), 4);
 
         let tested_tag_params = tested_filter_parameters(all_tested_tags);
 

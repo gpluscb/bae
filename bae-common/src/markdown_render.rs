@@ -90,14 +90,8 @@ impl StandardClassNameGenerator {
 }
 
 #[derive()]
-pub struct Language {
-    pub canonical_name: &'static str,
-    pub config: HighlightConfiguration,
-}
-
-#[derive()]
 pub struct CodeBlockHighlighter<G> {
-    pub languages: HashMap<&'static str, Language>,
+    pub languages: HashMap<&'static str, HighlightConfiguration>,
     pub class_name_generator: G,
 }
 
@@ -107,54 +101,46 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
         let rust = || {
             let mut rust = HighlightConfiguration::new(
                 tree_sitter_rust::language(),
-                tree_sitter_rust::HIGHLIGHT_QUERY,
+                "Rust",
+                tree_sitter_rust::HIGHLIGHTS_QUERY,
                 tree_sitter_rust::INJECTIONS_QUERY,
                 "",
             )?;
             rust.configure(&HIGHLIGHT_NAMES);
-            Ok(Language {
-                canonical_name: "Rust",
-                config: rust,
-            })
+            Ok(rust)
         };
         let js = || {
             let mut js = HighlightConfiguration::new(
                 tree_sitter_javascript::language(),
+                "JavaScript",
                 tree_sitter_javascript::HIGHLIGHT_QUERY,
-                tree_sitter_javascript::INJECTION_QUERY,
+                tree_sitter_javascript::INJECTIONS_QUERY,
                 tree_sitter_javascript::LOCALS_QUERY,
             )?;
             js.configure(&HIGHLIGHT_NAMES);
-            Ok(Language {
-                canonical_name: "JavaScript",
-                config: js,
-            })
+            Ok(js)
         };
         let cpp = || {
             let mut cpp = HighlightConfiguration::new(
                 tree_sitter_cpp::language(),
+                "C++",
                 tree_sitter_cpp::HIGHLIGHT_QUERY,
                 "",
                 "",
             )?;
             cpp.configure(&HIGHLIGHT_NAMES);
-            Ok(Language {
-                canonical_name: "C++",
-                config: cpp,
-            })
+            Ok(cpp)
         };
         let python = || {
             let mut python = HighlightConfiguration::new(
                 tree_sitter_python::language(),
-                tree_sitter_python::HIGHLIGHT_QUERY,
+                "Python",
+                tree_sitter_python::HIGHLIGHTS_QUERY,
                 "",
                 "",
             )?;
             python.configure(&HIGHLIGHT_NAMES);
-            Ok(Language {
-                canonical_name: "Python",
-                config: python,
-            })
+            Ok(python)
         };
 
         let mut languages = HashMap::new();
@@ -191,10 +177,11 @@ impl<G: CssClassNameGenerator> CodeBlockHighlighter<G> {
         lang: Option<&str>,
     ) -> Result<(), HighlighterError> {
         let canonical_name = if let Some(lang) = lang {
-            self.languages
+            &self
+                .languages
                 .get(lang)
                 .ok_or_else(|| HighlighterError::UnknownLanguage(lang.to_string()))?
-                .canonical_name
+                .language_name
         } else {
             "Plain Text"
         };
@@ -226,7 +213,7 @@ impl<G: CssClassNameGenerator> CodeBlockHighlighter<G> {
         // Collect early so we can fall back to full plain text in case of error
         // instead of having highlighted bits already in the output
         let highlights: Vec<_> = highlighter
-            .highlight(&language.config, code.as_bytes(), None, |_| None)?
+            .highlight(language, code.as_bytes(), None, |_| None)?
             .collect::<Result<_, _>>()?;
 
         for highlight in highlights {

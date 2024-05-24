@@ -27,8 +27,9 @@ fn escape(string: &mut String) {
         if let Some(replacement) = escape_byte(byte) {
             string.replace_range(i..=i, replacement);
             i += replacement.len();
+        } else {
+            i += 1;
         }
-        i += 1;
     }
 }
 

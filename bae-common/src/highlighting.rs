@@ -1,3 +1,4 @@
+use crate::markdown_render::CssClassNameGenerator;
 use itertools::Itertools;
 use serde::de::{Error as DeserializeError, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -67,23 +68,6 @@ pub struct Style {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Theme {
     pub styles: BTreeMap<usize, Style>,
-}
-
-pub trait CssClassNameGenerator {
-    fn class_for_highlight(&self, highlight_name: &str, highlight_idx: usize) -> Option<Cow<str>>;
-}
-
-pub struct FunctionCssClassNameGenerator<F> {
-    function: F,
-}
-
-impl<F> CssClassNameGenerator for FunctionCssClassNameGenerator<F>
-where
-    F: Fn(&str, usize) -> Option<String>,
-{
-    fn class_for_highlight(&self, highlight_name: &str, highlight_idx: usize) -> Option<Cow<str>> {
-        Some(Cow::Owned((self.function)(highlight_name, highlight_idx)?))
-    }
 }
 
 impl Color {

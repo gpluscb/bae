@@ -19,6 +19,7 @@ tree-sitter = "0.20"
 tree-sitter-rust = "0.20"
 tree-sitter-javascript = "0.20"
 tree-sitter-cpp = "0.20"
+tree-sitter-python = "0.20"
 tree-sitter-highlight = "0.20"
 rss = "2.0"
 sqlx = { version = "0.7", features = ["postgres", "chrono", "runtime-tokio"] }

@@ -58,11 +58,11 @@
     @apply rounded bg-purple-300 px-0.5;
 }
 
-#blog-post-contents .code-block-div, #blog-post-contents > p:has(img) {
+#blog-post-contents p:has(.blog-image) {
     @apply max-w-full my-5;
 }
 
-#blog-post-contents p > img {
+#blog-post-contents .blog-image {
     @apply rounded-md border-purple-300 border-2 mx-auto;
 }
 

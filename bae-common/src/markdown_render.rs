@@ -353,6 +353,7 @@ where
             (Event::End(TagEnd::CodeBlock), Some(_)) => {
                 let CodeBlock { lang, code } = current_code_block.take().unwrap();
 
+                // TODO: Support mermaid diagrams
                 let mut html = Vec::new();
                 highlighter.write_code_block(
                     &mut html,

@@ -114,9 +114,9 @@ async fn main() {
 }
 
 // https://github.com/tokio-rs/axum/blob/4d65ba0215b57797193ec49245d32d4dd79bb701/examples/tls-graceful-shutdown/src/main.rs
-async fn redirect_to_https_server<F>(ip: IpAddr, ports: Ports, signal: F)
+async fn redirect_to_https_server<Fut>(ip: IpAddr, ports: Ports, signal: Fut)
 where
-    F: Future<Output = ()> + Send + 'static,
+    Fut: Future<Output = ()> + Send + 'static,
 {
     fn make_https(host: &str, uri: Uri, ports: Ports) -> Result<Uri, BoxError> {
         let mut parts = uri.into_parts();

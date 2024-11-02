@@ -40,7 +40,7 @@ pub async fn home(HomePath {}: HomePath, State(database): State<PgPool>) -> Resu
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/blog/:post_url", rejection(Error))]
+#[typed_path("/blog/{post_url}", rejection(Error))]
 pub struct BlogPostPath {
     pub post_url: String,
 }
@@ -58,7 +58,7 @@ pub async fn blog_post(
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/blog/tagged/:tag", rejection(Error))]
+#[typed_path("/blog/tagged/{tag}", rejection(Error))]
 pub struct TaggedPath {
     pub tag: Tag,
 }

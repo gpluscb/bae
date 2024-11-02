@@ -7,22 +7,22 @@ resolver = "2"
 [workspace.dependencies]
 axum = { version = "0.7", features = ["tracing", "macros"] }
 axum-extra = { version = "0.9", features = ["typed-routing", "typed-header", "query"] }
-axum-server = { version = "0.6", features = ["tls-rustls"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
 tokio = { version = "1.35", features = ["macros", "rt-multi-thread", "signal"] }
 futures = "0.3"
-tower-http = { version = "0.5", features = ["trace", "fs"] }
+tower-http = { version = "0.6", features = ["trace", "fs"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 askama = "0.12"
-pulldown-cmark = { version = "0.11", default-features = false, features = ["html"] }
-tree-sitter = "0.22"
-tree-sitter-rust = "0.21"
-tree-sitter-javascript = "0.21"
-tree-sitter-cpp = "0.22"
-tree-sitter-python = "0.21"
-tree-sitter-highlight = "0.22"
+pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }
+tree-sitter = "0.24"
+tree-sitter-rust = "0.23"
+tree-sitter-javascript = "0.23"
+tree-sitter-cpp = "0.23"
+tree-sitter-python = "0.23"
+tree-sitter-highlight = "0.24"
 rss = "2.0"
-sqlx = { version = "0.7", features = ["postgres", "chrono", "runtime-tokio"] }
+sqlx = { version = "0.8", features = ["postgres", "chrono", "runtime-tokio"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 envy = "0.4"

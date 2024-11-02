@@ -100,7 +100,7 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
         // TODO: I should probably just Arc or Rc this
         let rust = || {
             let mut rust = HighlightConfiguration::new(
-                tree_sitter_rust::language(),
+                tree_sitter_rust::LANGUAGE.into(),
                 "Rust",
                 tree_sitter_rust::HIGHLIGHTS_QUERY,
                 tree_sitter_rust::INJECTIONS_QUERY,
@@ -111,7 +111,7 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
         };
         let js = || {
             let mut js = HighlightConfiguration::new(
-                tree_sitter_javascript::language(),
+                tree_sitter_javascript::LANGUAGE.into(),
                 "JavaScript",
                 tree_sitter_javascript::HIGHLIGHT_QUERY,
                 tree_sitter_javascript::INJECTIONS_QUERY,
@@ -122,7 +122,7 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
         };
         let cpp = || {
             let mut cpp = HighlightConfiguration::new(
-                tree_sitter_cpp::language(),
+                tree_sitter_cpp::LANGUAGE.into(),
                 "C++",
                 tree_sitter_cpp::HIGHLIGHT_QUERY,
                 "",
@@ -133,7 +133,7 @@ impl CodeBlockHighlighter<StandardClassNameGenerator> {
         };
         let python = || {
             let mut python = HighlightConfiguration::new(
-                tree_sitter_python::language(),
+                tree_sitter_python::LANGUAGE.into(),
                 "Python",
                 tree_sitter_python::HIGHLIGHTS_QUERY,
                 "",
